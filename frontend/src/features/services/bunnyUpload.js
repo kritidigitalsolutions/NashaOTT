@@ -146,35 +146,7 @@ export const uploadToBunny = async (
 ) => {
   if (!file) return "";
 
-  console.log(
-    "USING DIRECT BUNNY UPLOAD FOR:",
-    subfolder
-  );
-
-  try {
-    return await uploadDirectToBunny(
-      file,
-      type,
-      subfolder,
-      onProgress
-    );
-  } catch (err) {
-    const status = err?.response?.status;
-    const shouldFallbackToBackend =
-      !err?.response ||
-      status === 401 ||
-      status === 403 ||
-      status === 0;
-
-    if (!shouldFallbackToBackend) {
-      throw err;
-    }
-
-    return uploadThroughBackend(
-      file,
-      type,
-      subfolder,
-      onProgress
-    );
-  }
+  // Temporary local uploads through backend /admin/auth/bunny-upload.
+  // Direct Bunny CDN upload is disabled for local development.
+  return uploadThroughBackend(file, type, subfolder, onProgress);
 };
