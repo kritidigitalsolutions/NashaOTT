@@ -2,7 +2,7 @@ import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 // import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
 import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard } from "lucide-react";
-
+//new things
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#d4af37" },
   { id: "users", label: "Users", icon: Users, color: "#3a86ff" },
