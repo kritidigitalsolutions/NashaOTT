@@ -1,4 +1,3 @@
-@"
 node_modules/
 
 backend/uploads/
@@ -8,4 +7,3 @@ backend/firebase/serviceAccountkey.json
 frontend/.env
 
 .env
-"@ | Out-File -Encoding utf8 .gitignore

@@ -1,8 +1,11 @@
 const multer = require("multer");
 const path = require("path");
-const {
-  uploadStreamToBunny,
-} = require("../cdn/bunnyCDN");
+const fs = require("fs");
+
+// Bunny CDN upload is intentionally disabled. Files are written to backend/uploads.
+// const {
+//   uploadStreamToBunny,
+// } = require("../cdn/bunnyCDN");
 
 const getUploadInfo = (req, file) => {
   let type = "movies";
@@ -33,7 +36,7 @@ const getUploadInfo = (req, file) => {
   return {
     type,
     subfolder,
-    remoteFolder: `${type}/${subfolder}`,
+    uploadFolder: `${type}/${subfolder}`,
   };
 };
 
@@ -45,37 +48,46 @@ const storage = {
       const ext = path.extname(file.originalname).toLowerCase();
 
       const filename = `${uniqueName}${ext}`;
+      const relativePath = `${uploadInfo.uploadFolder}/${filename}`;
+      const destination = path.join(__dirname, "../uploads", uploadInfo.type, uploadInfo.subfolder);
+      const outputPath = path.join(destination, filename);
 
-     console.log("================================");
-console.log("UPLOAD START");
-console.log("FIELD:", file.fieldname);
-console.log("NAME:", file.originalname);
-console.log("TYPE:", file.mimetype);
-console.log("REMOTE PATH:", `${uploadInfo.remoteFolder}/${filename}`);
+      fs.mkdirSync(destination, { recursive: true });
 
-const result = await uploadStreamToBunny({
-  stream: file.stream,
-  remotePath: `${uploadInfo.remoteFolder}/${filename}`,
-  contentType: file.mimetype,
-});
+      console.log("================================");
+      console.log("LOCAL UPLOAD START");
+      console.log("FIELD:", file.fieldname);
+      console.log("NAME:", file.originalname);
+      console.log("TYPE:", file.mimetype);
+      console.log("LOCAL PATH:", relativePath);
 
-console.log("BUNNY RESPONSE:", result);
-console.log("================================");
+      const outStream = fs.createWriteStream(outputPath);
+      file.stream.pipe(outStream);
 
-      cb(null, {
-        filename,
-        destination: uploadInfo.remoteFolder,
-        path: result.url,
-        cdnUrl: result.url,
-        remotePath: result.path,
+      outStream.on("error", cb);
+
+      outStream.on("finish", () => {
+        const localUrl = `${req.protocol}://${req.get("host")}/uploads/${relativePath}`;
+
+        console.log("LOCAL UPLOAD COMPLETE:", localUrl);
+        console.log("================================");
+
+        cb(null, {
+          filename,
+          destination,
+          path: localUrl,
+          cdnUrl: localUrl,
+          localUrl,
+          remotePath: relativePath,
+        });
       });
     } catch (error) {
-  console.error("BUNNY UPLOAD ERROR");
-  console.error(error);
-  console.error(error.message);
+      console.error("LOCAL UPLOAD ERROR");
+      console.error(error);
+      console.error(error.message);
 
-  cb(error);
-}
+      cb(error);
+    }
   },
 
   _removeFile: (req, file, cb) => {
