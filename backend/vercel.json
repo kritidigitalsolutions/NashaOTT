@@ -3,12 +3,7 @@
   "builds": [
     {
       "src": "app.js",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": [
-          "uploads/**"
-        ]
-      }
+      "use": "@vercel/node"
     }
   ],
   "headers": [

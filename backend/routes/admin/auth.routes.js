@@ -1,16 +1,14 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
-const fs = require("fs");
 
 const router = express.Router();
 
 const { isAdmin } = require("../../middlewares/admin.middleware");
-// Commented out BunnyCDN imports
-// const {
-//   getClientUploadConfig,
-//   uploadStreamToBunny,
-// } = require("../../cdn/bunnyCDN");
+const {
+  getClientUploadConfig,
+  uploadStreamToBunny,
+} = require("../../cdn/bunnyCDN");
 
 const {
   loginAdmin,
@@ -66,7 +64,7 @@ const validateUploadTarget = (type, subfolder) => {
   };
 };
 
-const localStorage = {
+const bunnyStorage = {
   _handleFile: async (req, file, cb) => {
     try {
       if (!allowedMimeTypes.has(file.mimetype)) {
@@ -75,47 +73,22 @@ const localStorage = {
 
       const target = validateUploadTarget(req.body.type, req.body.subfolder);
       if (!target) {
-        return cb(new Error("Invalid upload target"));
+        return cb(new Error("Invalid Bunny upload target"));
       }
 
       const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension(file)}`;
 
-      // Ensure directory exists locally
-      const destDir = path.join(__dirname, "../../uploads", target.type, target.subfolder);
-      if (!fs.existsSync(destDir)) {
-        fs.mkdirSync(destDir, { recursive: true });
-      }
-
-      // Commented out BunnyCDN upload call
-      // const result = await uploadStreamToBunny({
-      //   stream: file.stream,
-      //   remotePath: `${target.type}/${target.subfolder}/${filename}`,
-      //   contentType: file.mimetype,
-      // });
-      // cb(null, {
-      //   filename,
-      //   path: result.url,
-      //   cdnUrl: result.url,
-      //   remotePath: result.path,
-      // });
-
-      const outPath = path.join(destDir, filename);
-      const outStream = fs.createWriteStream(outPath);
-
-      file.stream.pipe(outStream);
-
-      outStream.on("finish", () => {
-        const localUrl = `${req.protocol}://${req.get("host")}/uploads/${target.type}/${target.subfolder}/${filename}`;
-        cb(null, {
-          filename,
-          path: localUrl,
-          cdnUrl: localUrl,
-          remotePath: `${target.type}/${target.subfolder}/${filename}`,
-        });
+      const result = await uploadStreamToBunny({
+        stream: file.stream,
+        remotePath: `${target.type}/${target.subfolder}/${filename}`,
+        contentType: file.mimetype,
       });
 
-      outStream.on("error", (err) => {
-        cb(err);
+      cb(null, {
+        filename,
+        path: result.url,
+        cdnUrl: result.url,
+        remotePath: result.path,
       });
     } catch (err) {
       cb(err);
@@ -127,15 +100,15 @@ const localStorage = {
   },
 };
 
-const localUpload = multer({
-  storage: localStorage,
+const bunnyUpload = multer({
+  storage: bunnyStorage,
   limits: {
     fileSize: Number(process.env.MAX_UPLOAD_SIZE),
   },
 });
 
-const handleLocalUpload = (req, res, next) => {
-  localUpload.single("file")(req, res, (err) => {
+const handleBunnyUpload = (req, res, next) => {
+  bunnyUpload.single("file")(req, res, (err) => {
     if (!err) {
       return next();
     }
@@ -143,7 +116,7 @@ const handleLocalUpload = (req, res, next) => {
     const isClientError =
       err instanceof multer.MulterError ||
       err.message === "Invalid file type" ||
-      err.message === "Invalid upload target";
+      err.message === "Invalid Bunny upload target";
 
     return res.status(isClientError ? 400 : 500).json({
       success: false,
@@ -166,27 +139,19 @@ router.get(
   getAdminProfile
 );
 
-const getLocalUploadConfig = async (req, res) => {
+const getBunnyUploadConfig = async (req, res) => {
   try {
-    // Commented out client upload config from BunnyCDN
-    // const config = await getClientUploadConfig();
-    // res.json({
-    //   success: true,
-    //   ...config,
-    // });
-
-    res.json({
+    const config = await getClientUploadConfig();
+    return res.json({
       success: true,
-      useLocalStorage: true,
-      storageZone: "local",
-      cdnUrl: `${req.protocol}://${req.get("host")}/uploads`,
+      ...config,
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-const createLocalUpload = async (req, res) => {
+const createBunnyUpload = async (req, res) => {
   try {
     if (!req.file?.cdnUrl) {
       return res.status(400).json({
@@ -209,31 +174,16 @@ const createLocalUpload = async (req, res) => {
 };
 
 router.get(
-  "/local-config",
-  isAdmin,
-  getLocalUploadConfig
-);
-
-// Backward-compatible alias while frontend code is being migrated.
-router.get(
   "/bunny-config",
   isAdmin,
-  getLocalUploadConfig
+  getBunnyUploadConfig
 );
 
-router.post(
-  "/local-upload",
-  isAdmin,
-  handleLocalUpload,
-  createLocalUpload
-);
-
-// Backward-compatible alias while frontend code is being migrated.
 router.post(
   "/bunny-upload",
   isAdmin,
-  handleLocalUpload,
-  createLocalUpload
+  handleBunnyUpload,
+  createBunnyUpload
 );
 
 //OTP

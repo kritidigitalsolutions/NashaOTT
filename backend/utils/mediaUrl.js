@@ -4,16 +4,17 @@ const fs = require("fs");
 const path = require("path");
 
 /**
- * Returns the local upload URL for a multer-processed file, or the fallback value.
+ * Returns the CDN URL for a multer-processed file, or the fallback value.
+ * Never constructs local /uploads/... paths — CDN URL only.
  *
  * @param {Object|null} file - Multer file object (may have cdnUrl, path)
  * @param {string} fallback - Fallback value (e.g. req.body.poster which may already be a CDN URL)
- * @returns {string} The local upload URL or fallback
+ * @returns {string} The CDN URL or fallback
  */
 const getMediaUrl = (file, fallback = "") => {
   if (!file) return fallback;
-  // cdnUrl is kept for compatibility with existing controllers.
-  // It points to the local /uploads URL when local storage is enabled.
+  // cdnUrl is set by our custom multer storage engine (upload.middleware.js)
+  // file.path is also set to the CDN URL by upload.middleware.js
   return file.cdnUrl || file.path || fallback;
 };
 
