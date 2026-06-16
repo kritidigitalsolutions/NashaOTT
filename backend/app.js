@@ -55,11 +55,11 @@ const corsOptions = {
 
     // Dynamic pattern matching for development / Vercel preview environments
     const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
-const isNashaDomain =
-  origin.endsWith(".vercel.app") &&
-  origin.includes("nasha");
+// const isNashaDomain =
+//   origin.endsWith(".vercel.app") &&
+//   origin.includes("nasha");
 
-if (isLocalhost || isNashaDomain) {
+if (isLocalhost) {
   return callback(null, true);
 }
 
