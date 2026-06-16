@@ -1,230 +1,310 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* =======================================================
+   NASHA OTT — PREMIUM GLOBAL DESIGN SYSTEM
+   Luxury OTT Aesthetics | Gold & Obsidian Obsidian Theme
+   ======================================================= */
 
-:root{
-  --color-black:#050505;
-  --color-black-2:#0A0A0A;
-  --color-black-3:#111111;
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-  --color-white:#ffffff;
-  --color-ivory:#f6f3ea;
-  --color-cream:#fff8e7;
-  --color-soft-gray:#b9b9b9;
-
-  --color-gold:#D4AF37;
-  --color-gold-soft:#F7D774;
-  --color-gold-neon:#FFD700;
-  --color-brown-gold:#B8860B;
-
-  --color-card-bg: rgba(0,0,0,0.25);
-  --color-muted: rgba(255,255,255,0.70);
-  --color-border: rgba(212,175,55,0.20);
-  --color-surface: rgba(17,17,17,0.66);
-
-  --color-primary: var(--color-gold);
-  --color-primary-2: var(--color-gold-soft);
-
-  --color-shadow: rgba(0,0,0,0.65);
-}
-
-[data-theme="light"]{
-  --color-black:#ffffff;
-
-  --color-white:#111111;
-  --color-ivory:#ffffff;
-  --color-cream:#fff6de;
-  --color-soft-gray:#5a5a5a;
-
-  /* Gold darkened for readability on cream/white backgrounds */
-  --color-gold:#7A5C00;
-  --color-gold-soft:#8B6200;
-  --color-gold-neon:#7A5C00;
-  --color-brown-gold:#5C3D00;
-
-  --color-card-bg: rgba(255,255,255,0.70);
-  --color-muted: rgba(10,10,10,0.70);
-  --color-border: rgba(122,92,0,0.22);
-  --color-surface: rgba(255,252,240,0.88);
-
-  --color-primary: var(--color-gold);
-  --color-primary-2: var(--color-gold-soft);
-
-  --color-shadow: rgba(0,0,0,0.18);
-}
-
-html, body, #root{
-  height: 100%;
-}
-
-body{
+/* --- Reset --- */
+*,
+*::before,
+*::after {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
-  background: radial-gradient(1200px circle at 20% -10%, rgba(212,175,55,0.14), transparent 40%),
-              radial-gradient(900px circle at 90% 10%, rgba(255,215,0,0.09), transparent 35%),
-              linear-gradient(180deg, var(--color-black-2), var(--color-black-3));
-  color: white;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-[data-theme="light"] body{
-  background: radial-gradient(1200px circle at 20% -10%, rgba(212,175,55,0.18), transparent 40%),
-              radial-gradient(900px circle at 90% 10%, rgba(255,215,0,0.10), transparent 35%),
-              linear-gradient(180deg, #ffffff, #f4f1ea);
-  color: #111111;
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  background-color: #050505;
 }
 
-.glass{
-  background: var(--color-card-bg);
-  border: 1px solid var(--color-border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+/* ---- Brand Theme Tokens ---- */
+body {
+  font-family: 'Plus Jakarta Sans', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  
+  /* Obsidian Dark Theme */
+  --bg: #050505;
+  --bg2: #0a0a0a;
+  --bg3: #111111;
+  --bg-input: #141414;
+  --border: rgba(212, 175, 55, 0.15);
+  --border2: rgba(212, 175, 55, 0.25);
+  --text: #ffffff;
+  --text-muted: #a0a0a0;
+  --text-soft: #e5e5e5;
+  
+  /* NASHA OTT Gold Colors */
+  --primary: #d4af37;
+  --primary-hover: #f4d03f;
+  --primary-active: #c9a227;
+  --primary-dim: rgba(212, 175, 55, 0.12);
+  --primary-dim-hover: rgba(212, 175, 55, 0.22);
+  --gold-glow: 0 0 20px rgba(212, 175, 55, 0.2);
+  
+  /* Secondary Palette */
+  --blue: #3a86ff;
+  --blue-dim: rgba(58, 134, 255, 0.12);
+  --green: #06d6a0;
+  --green-dim: rgba(6, 214, 160, 0.12);
+  --orange: #ffb703;
+  --orange-dim: rgba(255, 183, 3, 0.12);
+  --purple: #8338ec;
+  --purple-dim: rgba(131, 56, 236, 0.12);
+  --red-danger: #e63946;
+  --red-danger-dim: rgba(230, 57, 70, 0.12);
+  
+  /* Glassmorphism */
+  --glass: rgba(10, 10, 10, 0.75);
+  --blur: blur(20px);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 175, 55, 0.05);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.6);
+  
+  background: var(--bg);
+  color: var(--text);
+  transition: background 0.4s ease, color 0.4s ease;
 }
 
-[data-theme="light"] .glass {
-  box-shadow:
-    0 4px 24px rgba(0,0,0,0.10),
-    0 1.5px 6px rgba(0,0,0,0.07),
-    0 0 0 1px rgba(122,92,0,0.10);
+/* ---- Light Theme Overrides (Premium Platinum & Soft Gold) ---- */
+body.light {
+  --bg: #fafafa;
+  --bg2: #ffffff;
+  --bg3: #f3f3f3;
+  --bg-input: #f9f9f9;
+  --border: rgba(212, 175, 55, 0.2);
+  --border2: rgba(212, 175, 55, 0.35);
+  --text: #111111;
+  --text-muted: #707070;
+  --text-soft: #333333;
+  --glass: rgba(255, 255, 255, 0.8);
+  --shadow: 0 16px 48px rgba(212, 175, 55, 0.08), 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
-.gold-border{
-  box-shadow: 0 0 0 1px rgba(212,175,55,0.18), 0 0 24px rgba(212,175,55,0.15);
-}
-
-@media (prefers-reduced-motion: reduce){
-  .animate-*, *{
-    animation-duration: 0.001ms !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-/* ─── Beautiful custom scrollbar ────────────────────────────── */
-
-/* WebKit (Chrome, Edge, Safari) */
+/* ---- Scrollbar ---- */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.30);
-  border-radius: 999px;
-  transition: background 0.2s;
+  background: var(--border2);
+  border-radius: 10px;
+  border: 2px solid var(--bg);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 175, 55, 0.65);
+  background: var(--primary);
 }
 
-::-webkit-scrollbar-corner {
-  background: transparent;
+/* ---- Selection ---- */
+::selection {
+  background: var(--primary);
+  color: #000000;
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(212,175,55,0.30) transparent;
+/* ---- Inputs & Textareas ---- */
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: 0.95rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background-color: var(--bg-input) !important;
+  color: var(--text) !important;
+  outline: none;
+  padding: 12px 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* utility for metallic highlights */
-.metallic {
-  background: linear-gradient(135deg,
-    rgba(255,215,0,0.10),
-    rgba(212,175,55,0.75),
-    rgba(255,215,0,0.18)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2) !important;
 }
 
-/* In light mode the gold gradient is too faint — use rich dark amber */
-[data-theme="light"] .metallic {
-  background: linear-gradient(135deg,
-    #5C3D00,
-    #8B6200,
-    #6B4A00
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* ---- Global Buttons ---- */
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   LIGHT MODE — All hardcoded `text-white` Tailwind classes produce
-   pure #fff, which is invisible on the light cream background.
-   These overrides map every white opacity variant to dark equivalents.
-═══════════════════════════════════════════════════════════════════ */
-
-[data-theme="light"] .text-white               { color: #111111; }
-[data-theme="light"] .text-white\/90           { color: rgba(17,17,17,0.90); }
-[data-theme="light"] .text-white\/80           { color: rgba(17,17,17,0.80); }
-[data-theme="light"] .text-white\/75           { color: rgba(17,17,17,0.75); }
-[data-theme="light"] .text-white\/70           { color: rgba(17,17,17,0.70); }
-[data-theme="light"] .text-white\/65           { color: rgba(17,17,17,0.65); }
-[data-theme="light"] .text-white\/60           { color: rgba(17,17,17,0.60); }
-[data-theme="light"] .text-white\/55           { color: rgba(17,17,17,0.55); }
-[data-theme="light"] .text-white\/40           { color: rgba(17,17,17,0.40); }
-[data-theme="light"] .text-white\/25           { color: rgba(17,17,17,0.25); }
-[data-theme="light"] .text-white\/20           { color: rgba(17,17,17,0.20); }
-
-/* hover variants */
-[data-theme="light"] .hover\:text-white:hover  { color: #111111 !important; }
-
-/* Inputs — text typed by user and placeholders */
-[data-theme="light"] input,
-[data-theme="light"] textarea {
-  color: #111111;
-}
-[data-theme="light"] input::placeholder,
-[data-theme="light"] textarea::placeholder      { color: rgba(17,17,17,0.38); }
-
-/* Input backgrounds: bg-black-DEFAULT/30 becomes white/30 in light mode
-   (nearly invisible). Give them a subtle dark tint instead. */
-[data-theme="light"] input[type="email"],
-[data-theme="light"] input[type="password"],
-[data-theme="light"] input[type="text"],
-[data-theme="light"] input:not([type]) {
-  background-color: rgba(17,17,17,0.05);
-  border-color: rgba(184,134,11,0.30);
+/* Premium Gold Button */
+.btn-gold {
+  background: linear-gradient(135deg, #c9a227 0%, #d4af37 50%, #f4d03f 100%);
+  background-size: 200% auto;
+  color: #050505 !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: none;
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.25);
+  transition: all 0.3s ease;
 }
 
-/* Sidebar: "NASHA" brand text uses text-white → override */
-[data-theme="light"] .text-xs.font-extrabold.tracking-widest { color: #111111; }
-
-/* Table cells inherit from body in light mode */
-[data-theme="light"] td,
-[data-theme="light"] th { color: inherit; }
-
-/* Border on stat cards — keep gold visible in light mode */
-[data-theme="light"] .border-\[rgba\(212\,175\,55\,0\.14\)\] {
-  border-color: rgba(184,134,11,0.30);
+.btn-gold:hover {
+  background-position: right center;
+  box-shadow: 0 6px 24px rgba(212, 175, 55, 0.45), 0 0 15px rgba(212, 175, 55, 0.3);
+  transform: translateY(-1.5px);
 }
 
-/* TopNavbar search placeholder */
-[data-theme="light"] .placeholder\:text-white\/40::placeholder {
-  color: rgba(17,17,17,0.38);
+.btn-gold:active {
+  transform: translateY(0.5px);
 }
 
-/* ─── Light mode: Sidebar ──────────────────────────────────────
-   Give sidebar a warm cream background + right-side shadow for depth
-─────────────────────────────────────────────────────────────── */
-[data-theme="light"] aside {
-  background-color: rgba(255, 252, 240, 0.96);
-  box-shadow: 4px 0 20px rgba(0,0,0,0.10), 2px 0 6px rgba(0,0,0,0.06);
+/* Premium Glass Secondary Button */
+.btn-glass {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text-soft) !important;
+  font-weight: 600;
+  backdrop-filter: var(--blur);
 }
 
-[data-theme="light"] aside .border-r {
-  border-right-color: rgba(122,92,0,0.16);
+.btn-glass:hover {
+  background: var(--primary-dim);
+  border-color: var(--primary);
+  color: var(--text) !important;
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.15);
+  transform: translateY(-1px);
 }
 
-/* ─── Light mode: Topbar shadow ────────────────────────────────
-   Add a subtle drop-shadow under the sticky header
-─────────────────────────────────────────────────────────────── */
-[data-theme="light"] header.sticky {
-  box-shadow: 0 2px 16px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.06);
+/* Premium Danger Button */
+.btn-danger-premium {
+  background: linear-gradient(135deg, #a31d1d 0%, #e63946 100%);
+  color: #ffffff !important;
+  font-weight: 600;
+  border: none;
+  box-shadow: 0 4px 15px rgba(230, 57, 70, 0.2);
+}
+
+.btn-danger-premium:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.35);
+  transform: translateY(-1px);
+}
+
+/* ---- Toast Component ---- */
+.global-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 9999;
+  min-width: 340px;
+  background: var(--glass);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  box-shadow: var(--shadow);
+  backdrop-filter: var(--blur);
+  overflow: hidden;
+  animation: toastIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes toastIn {
+  from { transform: translateX(100%) scale(0.9); opacity: 0; }
+  to { transform: translateX(0) scale(1); opacity: 1; }
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.toast-icon {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.95rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.global-toast.success .toast-icon { background: var(--green-dim); color: var(--green); }
+.global-toast.error .toast-icon { background: var(--red-danger-dim); color: var(--red-danger); }
+
+.toast-message {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  transform-origin: left;
+  animation: toastProgress 3.5s linear forwards;
+}
+
+.global-toast.success .toast-progress { background: var(--green); }
+.global-toast.error .toast-progress { background: var(--red-danger); }
+
+@keyframes toastProgress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* ---- General Glassmorphism Templates ---- */
+.glass-panel {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.3), transparent);
+  pointer-events: none;
+}
+
+/* ---- Utility Classes ---- */
+.text-success { color: var(--green) !important; }
+.text-warning { color: var(--orange) !important; }
+.text-danger { color: var(--red-danger) !important; }
+.text-info { color: var(--blue) !important; }
+.text-gold { color: var(--primary) !important; }
+.mono { font-family: 'Courier New', Courier, monospace; }
+
+/* Glowing indicators */
+.gold-glow {
+  box-shadow: var(--gold-glow);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--border2) 50%, transparent 100%);
+  margin: 16px 0;
 }
