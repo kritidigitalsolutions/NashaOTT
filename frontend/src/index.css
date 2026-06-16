@@ -1,0 +1,230 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --color-black:#050505;
+  --color-black-2:#0A0A0A;
+  --color-black-3:#111111;
+
+  --color-white:#ffffff;
+  --color-ivory:#f6f3ea;
+  --color-cream:#fff8e7;
+  --color-soft-gray:#b9b9b9;
+
+  --color-gold:#D4AF37;
+  --color-gold-soft:#F7D774;
+  --color-gold-neon:#FFD700;
+  --color-brown-gold:#B8860B;
+
+  --color-card-bg: rgba(0,0,0,0.25);
+  --color-muted: rgba(255,255,255,0.70);
+  --color-border: rgba(212,175,55,0.20);
+  --color-surface: rgba(17,17,17,0.66);
+
+  --color-primary: var(--color-gold);
+  --color-primary-2: var(--color-gold-soft);
+
+  --color-shadow: rgba(0,0,0,0.65);
+}
+
+[data-theme="light"]{
+  --color-black:#ffffff;
+
+  --color-white:#111111;
+  --color-ivory:#ffffff;
+  --color-cream:#fff6de;
+  --color-soft-gray:#5a5a5a;
+
+  /* Gold darkened for readability on cream/white backgrounds */
+  --color-gold:#7A5C00;
+  --color-gold-soft:#8B6200;
+  --color-gold-neon:#7A5C00;
+  --color-brown-gold:#5C3D00;
+
+  --color-card-bg: rgba(255,255,255,0.70);
+  --color-muted: rgba(10,10,10,0.70);
+  --color-border: rgba(122,92,0,0.22);
+  --color-surface: rgba(255,252,240,0.88);
+
+  --color-primary: var(--color-gold);
+  --color-primary-2: var(--color-gold-soft);
+
+  --color-shadow: rgba(0,0,0,0.18);
+}
+
+html, body, #root{
+  height: 100%;
+}
+
+body{
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  background: radial-gradient(1200px circle at 20% -10%, rgba(212,175,55,0.14), transparent 40%),
+              radial-gradient(900px circle at 90% 10%, rgba(255,215,0,0.09), transparent 35%),
+              linear-gradient(180deg, var(--color-black-2), var(--color-black-3));
+  color: white;
+}
+
+[data-theme="light"] body{
+  background: radial-gradient(1200px circle at 20% -10%, rgba(212,175,55,0.18), transparent 40%),
+              radial-gradient(900px circle at 90% 10%, rgba(255,215,0,0.10), transparent 35%),
+              linear-gradient(180deg, #ffffff, #f4f1ea);
+  color: #111111;
+}
+
+.glass{
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+[data-theme="light"] .glass {
+  box-shadow:
+    0 4px 24px rgba(0,0,0,0.10),
+    0 1.5px 6px rgba(0,0,0,0.07),
+    0 0 0 1px rgba(122,92,0,0.10);
+}
+
+.gold-border{
+  box-shadow: 0 0 0 1px rgba(212,175,55,0.18), 0 0 24px rgba(212,175,55,0.15);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .animate-*, *{
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ─── Beautiful custom scrollbar ────────────────────────────── */
+
+/* WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(212, 175, 55, 0.30);
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.65);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212,175,55,0.30) transparent;
+}
+
+/* utility for metallic highlights */
+.metallic {
+  background: linear-gradient(135deg,
+    rgba(255,215,0,0.10),
+    rgba(212,175,55,0.75),
+    rgba(255,215,0,0.18)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* In light mode the gold gradient is too faint — use rich dark amber */
+[data-theme="light"] .metallic {
+  background: linear-gradient(135deg,
+    #5C3D00,
+    #8B6200,
+    #6B4A00
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE — All hardcoded `text-white` Tailwind classes produce
+   pure #fff, which is invisible on the light cream background.
+   These overrides map every white opacity variant to dark equivalents.
+═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] .text-white               { color: #111111; }
+[data-theme="light"] .text-white\/90           { color: rgba(17,17,17,0.90); }
+[data-theme="light"] .text-white\/80           { color: rgba(17,17,17,0.80); }
+[data-theme="light"] .text-white\/75           { color: rgba(17,17,17,0.75); }
+[data-theme="light"] .text-white\/70           { color: rgba(17,17,17,0.70); }
+[data-theme="light"] .text-white\/65           { color: rgba(17,17,17,0.65); }
+[data-theme="light"] .text-white\/60           { color: rgba(17,17,17,0.60); }
+[data-theme="light"] .text-white\/55           { color: rgba(17,17,17,0.55); }
+[data-theme="light"] .text-white\/40           { color: rgba(17,17,17,0.40); }
+[data-theme="light"] .text-white\/25           { color: rgba(17,17,17,0.25); }
+[data-theme="light"] .text-white\/20           { color: rgba(17,17,17,0.20); }
+
+/* hover variants */
+[data-theme="light"] .hover\:text-white:hover  { color: #111111 !important; }
+
+/* Inputs — text typed by user and placeholders */
+[data-theme="light"] input,
+[data-theme="light"] textarea {
+  color: #111111;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder      { color: rgba(17,17,17,0.38); }
+
+/* Input backgrounds: bg-black-DEFAULT/30 becomes white/30 in light mode
+   (nearly invisible). Give them a subtle dark tint instead. */
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input:not([type]) {
+  background-color: rgba(17,17,17,0.05);
+  border-color: rgba(184,134,11,0.30);
+}
+
+/* Sidebar: "NASHA" brand text uses text-white → override */
+[data-theme="light"] .text-xs.font-extrabold.tracking-widest { color: #111111; }
+
+/* Table cells inherit from body in light mode */
+[data-theme="light"] td,
+[data-theme="light"] th { color: inherit; }
+
+/* Border on stat cards — keep gold visible in light mode */
+[data-theme="light"] .border-\[rgba\(212\,175\,55\,0\.14\)\] {
+  border-color: rgba(184,134,11,0.30);
+}
+
+/* TopNavbar search placeholder */
+[data-theme="light"] .placeholder\:text-white\/40::placeholder {
+  color: rgba(17,17,17,0.38);
+}
+
+/* ─── Light mode: Sidebar ──────────────────────────────────────
+   Give sidebar a warm cream background + right-side shadow for depth
+─────────────────────────────────────────────────────────────── */
+[data-theme="light"] aside {
+  background-color: rgba(255, 252, 240, 0.96);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.10), 2px 0 6px rgba(0,0,0,0.06);
+}
+
+[data-theme="light"] aside .border-r {
+  border-right-color: rgba(122,92,0,0.16);
+}
+
+/* ─── Light mode: Topbar shadow ────────────────────────────────
+   Add a subtle drop-shadow under the sticky header
+─────────────────────────────────────────────────────────────── */
+[data-theme="light"] header.sticky {
+  box-shadow: 0 2px 16px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.06);
+}

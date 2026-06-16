@@ -1,0 +1,11 @@
+@"
+node_modules/
+
+backend/uploads/
+backend/.env
+backend/firebase/serviceAccountkey.json
+
+frontend/.env
+
+.env
+"@ | Out-File -Encoding utf8 .gitignore
