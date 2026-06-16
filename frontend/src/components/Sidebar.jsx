@@ -29,10 +29,10 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
       {/* ── Brand ── */}
       <div className="sidebar-brand">
         <div className="sidebar-logo">
-          <img src="/nasha-logo.png" alt="Nasha Logo" />
+          <img src="/nazar-logo.png" alt="Nazar Logo" />
         </div>
         <div>
-          <div className="sidebar-title">Nasha OTT</div>
+          <div className="sidebar-title">Nazar OTT</div>
           <div className="sidebar-tag">Admin Console</div>
         </div>
         <button className="mobile-close-btn" onClick={toggleSidebar}>

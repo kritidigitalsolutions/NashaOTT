@@ -43,9 +43,9 @@ const AdminLogin = () => {
         {/* Brand */}
         <div className="login-brand">
           <div className="login-logo">
-            <img src="/nasha-logo.png" alt="Nasha Logo" />
+            <img src="/nazar-logo.png" alt="Nazar Logo" />
           </div>
-          <h1>Nasha OTT</h1>
+          <h1>Nazar OTT</h1>
           <p>Sign in to your Admin Panel</p>
         </div>
 
