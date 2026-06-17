@@ -211,7 +211,7 @@ const handleSubmit = async (e) => {
   setUploadPhase("main");
 
   try {
-    await createContent({
+    const result = await createContent({
       form,
       videoFile, posterFile, bannerFile, trailerFile,
       castFiles,
@@ -237,8 +237,11 @@ const handleSubmit = async (e) => {
         }
       },                              // ← callback ends here, no reset inside
     });
-
-    alert("Content published successfully! 🚀");
+    alert(
+      result?.warning || form.is18Plus
+        ? "Content published successfully!\n\nWarning: this content is marked 18+."
+        : "Content published successfully!"
+    );
 
     // ✅ Reset HERE — after await resolves, everything is done
     resetForm();

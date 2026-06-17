@@ -81,6 +81,7 @@ export const createContent = async ({
   formData.append("releaseYear", form.releaseYear ? Number(form.releaseYear) : "");
   formData.append("duration", form.duration);
   formData.append("isPremium", String(form.isPremium));
+  formData.append("is18Plus", String(form.is18Plus));
   formData.append("isComingSoon", String(form.isComingSoon));
   formData.append("releaseDate", form.releaseDate || "");
   formData.append("priority", Number(form.priority) || 0);
@@ -187,6 +188,7 @@ console.log(response.data);
         epFormData.append("title", ep.title);
         epFormData.append("description", ep.description || "");
         epFormData.append("duration", ep.duration || "");
+        epFormData.append("is18Plus", String(ep.is18Plus ?? form.is18Plus));
         epFormData.append("videoUrl", epVideoUrl);
         epFormData.append("thumbnailUrl", epThumbnailUrl);
 

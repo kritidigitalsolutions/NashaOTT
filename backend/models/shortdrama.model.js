@@ -48,6 +48,11 @@ const shortDramaSchema =
         default: false,
       },
 
+      is18Plus: {
+        type: Boolean,
+        default: false,
+      },
+
       priority: {
         type: Number,
         default: 0,

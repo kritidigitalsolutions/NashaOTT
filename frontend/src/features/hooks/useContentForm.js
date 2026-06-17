@@ -15,6 +15,7 @@ const EMPTY_FORM = {
   poster: "",
   banner: "",
   isPremium: false,
+  is18Plus: false,
   isComingSoon: false,
   releaseDate: "",
   priority: 0,

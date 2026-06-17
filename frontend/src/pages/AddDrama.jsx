@@ -11,6 +11,7 @@ import {
   Tag,
   Layers,
   Lock,
+  ShieldAlert,
   Image,
   Video,
   Upload,
@@ -26,6 +27,7 @@ const EMPTY_FORM = {
   genre: "",
   category: "",
   isPremium: false,
+  is18Plus: false,
   status: "ongoing",
   priority: 0,
 };
@@ -145,6 +147,7 @@ export default function AddDrama() {
       ));
       formData.append("category", JSON.stringify(form.category ? [form.category] : []));
       formData.append("isPremium", String(form.isPremium));
+      formData.append("is18Plus", String(form.is18Plus));
       formData.append("status", form.status);
       formData.append("priority", String(Number(form.priority) || 0));
 
@@ -181,6 +184,7 @@ export default function AddDrama() {
           epForm.append("duration", ep.duration || "");
           epForm.append("isLocked", String(ep.isLocked));
           epForm.append("isVertical", String(ep.isVertical));
+          epForm.append("is18Plus", String(ep.is18Plus ?? form.is18Plus));
           epForm.append("videoUrl", epVideoUrl);
           epForm.append("thumbnail", epThumbnailUrl);
 
@@ -189,8 +193,11 @@ export default function AddDrama() {
           });
         }
       }
-
-      alert("Short Drama published successfully! 🎬");
+      alert(
+        res.data?.warning || form.is18Plus
+          ? "Short Drama published successfully!\n\nWarning: this content is marked 18+."
+          : "Short Drama published successfully!"
+      );
 
       // Reset
       setForm(EMPTY_FORM);
@@ -318,7 +325,16 @@ export default function AddDrama() {
               <input type="checkbox" name="isPremium" onChange={ch} checked={form.isPremium} />
               <span style={{ color: "var(--primary)" }}><Lock size={16} style={{ marginRight: 8 }} />Premium Content</span>
             </label>
+            <label className="checkbox-row" style={{ flex: 1, minWidth: "200px", background: "rgba(245,158,11,0.12)", borderColor: "rgba(245,158,11,0.25)" }}>
+              <input type="checkbox" name="is18Plus" onChange={ch} checked={form.is18Plus} />
+              <span style={{ color: "var(--orange)" }}><ShieldAlert size={16} style={{ marginRight: 8 }} />18+ Content Warning</span>
+            </label>
           </div>
+          {form.is18Plus && (
+            <p style={{ marginTop: 12, color: "var(--orange)", fontSize: "0.85rem" }}>
+              Warning: this title will be marked for adult audiences.
+            </p>
+          )}
         </div>
 
         {/* Media Assets */}

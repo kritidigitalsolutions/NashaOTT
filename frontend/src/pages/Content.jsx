@@ -6,7 +6,7 @@ import "./Content.css";
 import {
   Eye, Edit2, Trash2, X, Play, Film, Tv,
   Search, Plus, ChevronRight, ChevronLeft, ChevronDown, User, Calendar, Video,
-  Activity, Upload
+  Activity, Upload, ShieldAlert
 } from "lucide-react";
 
 /* ===================== PAGINATION COMPONENT ===================== */
@@ -115,7 +115,7 @@ export default function Content() {
 
   // Add season/episode forms
   const [showAddEpisodeForm, setShowAddEpisodeForm] = useState(null); // seasonNumber
-  const [newEpisode, setNewEpisode] = useState({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" });
+  const [newEpisode, setNewEpisode] = useState({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "", is18Plus: false });
   const [newEpisodeVideo, setNewEpisodeVideo] = useState(null);
   const [newEpisodeThumbnail, setNewEpisodeThumbnail] = useState(null);
   const [showAddSeasonForm, setShowAddSeasonForm] = useState(false);
@@ -305,6 +305,7 @@ export default function Content() {
       formData.append("seasonNumber", epData.seasonNumber);
       formData.append("duration", epData.duration || "");
       formData.append("description", epData.description || "");
+      formData.append("is18Plus", String(epData.is18Plus));
       formData.append("videoUrl", videoUrl);
       formData.append("thumbnailUrl", thumbnailUrl);
 
@@ -313,7 +314,7 @@ export default function Content() {
       alert("Episode added successfully!");
       setShowAddEpisodeForm(null);
       setShowAddSeasonForm(false);
-      setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" });
+      setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "", is18Plus: false });
       setNewSeasonNumber("");
       setNewEpisodeVideo(null);
       setNewEpisodeThumbnail(null);
@@ -463,7 +464,7 @@ export default function Content() {
 
       const formData = new FormData();
       // Basic text fields
-      const textFields = ["title", "description", "language", "duration", "rating", "releaseYear", "isPremium", "isComingSoon", "releaseDate", "priority"];
+      const textFields = ["title", "description", "language", "duration", "rating", "releaseYear", "isPremium", "is18Plus", "isComingSoon", "releaseDate", "priority"];
 
       textFields.forEach(k => {
         const value = editData[k];
@@ -532,7 +533,7 @@ export default function Content() {
       }
 
       const formData = new FormData();
-      const textFields = ["title", "description", "seasonNumber", "episodeNumber", "duration"];
+      const textFields = ["title", "description", "seasonNumber", "episodeNumber", "duration", "is18Plus"];
       textFields.forEach((k) => {
 
         // Prevent sending invalid null date
@@ -719,12 +720,12 @@ export default function Content() {
                 <table className="tbl">
                   <thead>
                     <tr>
-                      <th>Title</th><th>Genre</th><th>Year</th><th>Rating</th><th>Priority</th><th>Premium</th><th>Status</th><th>Actions</th>
+                      <th>Title</th><th>Genre</th><th>Year</th><th>Rating</th><th>Priority</th><th>Premium</th><th>18+</th><th>Status</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayData.length === 0 ? (
-                      <tr><td colSpan={8}>No movies found</td></tr>
+                      <tr><td colSpan={9}>No movies found</td></tr>
                     ) : displayData.map(movie => (
                       <tr key={movie._id}>
                         <td>
@@ -747,6 +748,7 @@ export default function Content() {
                         <td>{movie.rating}</td>
                         <td><strong>{movie.priority || 0}</strong></td>
                         <td><span className={`badge ${movie.isPremium ? "badge-active" : "badge-draft"}`}>{movie.isPremium ? "Premium" : "Free"}</span></td>
+                        <td><span className={`badge ${movie.is18Plus ? "badge-coming" : "badge-draft"}`}>{movie.is18Plus ? "18+" : "No"}</span></td>
                         <td>
                           <span className={`badge ${isLocked(movie) ? "badge-coming" : "badge-pub"}`}>
                             {isLocked(movie) ? "Coming Soon" : "Published"}
@@ -794,12 +796,12 @@ export default function Content() {
                 <table className="tbl">
                   <thead>
                     <tr>
-                      <th>Title</th><th>Genre</th><th>Year</th><th>Rating</th><th>Priority</th><th>Seasons</th><th>Status</th><th>Actions</th>
+                      <th>Title</th><th>Genre</th><th>Year</th><th>Rating</th><th>Priority</th><th>Seasons</th><th>18+</th><th>Status</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayData.length === 0 ? (
-                      <tr><td colSpan={8}>No series found</td></tr>
+                      <tr><td colSpan={9}>No series found</td></tr>
                     ) : displayData.map(series => (
                       <tr key={series._id}>
                         <td>
@@ -821,6 +823,7 @@ export default function Content() {
                         <td>{series.rating}</td>
                         <td><strong>{series.priority || 0}</strong></td>
                         <td>{series.totalSeasons}</td>
+                        <td><span className={`badge ${series.is18Plus ? "badge-coming" : "badge-draft"}`}>{series.is18Plus ? "18+" : "No"}</span></td>
                         <td>
                           <span className={`badge ${isLocked(series) ? "badge-coming" : "badge-pub"}`}>
                             {isLocked(series) ? "Coming Soon" : "Published"}

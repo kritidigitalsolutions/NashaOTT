@@ -1,6 +1,7 @@
 const Series = require("../../models/series.model");
 const Episode = require("../../models/episode.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
+const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
 
 // ========================================
 // HELPERS
@@ -106,7 +107,8 @@ const addSeries = async (req, res) => {
       trailerUrl: getMediaUrl(trailer, req.body.trailerUrl),
       isComingSoon: req.body.isComingSoon === "true",
       releaseDate: normalizeDateInput(req.body.releaseDate),
-      isPremium: req.body.isPremium === "true",
+      isPremium: parseBoolean(req.body.isPremium),
+      is18Plus: parseBoolean(req.body.is18Plus),
       rating: req.body.rating || 0,
       cast: sanitizeCast(cast),
       category,
@@ -116,6 +118,7 @@ const addSeries = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Series added successfully",
+      warning: getAdultContentWarning(series.is18Plus),
       series,
     });
   } catch (error) {
@@ -222,7 +225,10 @@ const updateSeries = async (req, res) => {
     if (!series.isComingSoon && req.body.releaseDate === undefined) {
       series.releaseDate = null;
     }
-    series.isPremium = req.body.isPremium === "true";
+    series.isPremium = parseBoolean(req.body.isPremium);
+    if (req.body.is18Plus !== undefined) {
+      series.is18Plus = parseBoolean(req.body.is18Plus);
+    }
     series.category = category;
 
     if (req.files?.poster?.[0]) {
@@ -308,7 +314,12 @@ const updateSeries = async (req, res) => {
 
     await series.save();
 
-    return res.json({ success: true, message: "Series updated successfully", series });
+    return res.json({
+      success: true,
+      message: "Series updated successfully",
+      warning: getAdultContentWarning(series.is18Plus),
+      series
+    });
   } catch (error) {
     console.error("UPDATE SERIES ERROR:", error);
     return res.status(500).json({ success: false, message: "Failed to update series", error: error.message });

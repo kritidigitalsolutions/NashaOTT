@@ -7,6 +7,7 @@ const ShortDrama = require(
 );
 
 const { getMediaUrl, deleteMedia } = require("../../utils/mediaUrl");
+const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
 
 
 // ========================================
@@ -86,8 +87,10 @@ const addDramaEpisode =
             "true",
 
           isVertical:
-            req.body.isVertical !==
-            "false",
+            !parseBoolean(req.body.isVertical, true) ? false : true,
+
+          is18Plus:
+            parseBoolean(req.body.is18Plus),
 
           videoUrl: getMediaUrl(
             video,
@@ -108,6 +111,7 @@ const addDramaEpisode =
         success: true,
         message:
           "Drama episode added successfully",
+        warning: getAdultContentWarning(episode.is18Plus),
 
         episode,
       });
@@ -243,8 +247,16 @@ const updateDramaEpisode =
       ) {
 
         episode.isVertical =
-          req.body.isVertical !==
-          "false";
+          parseBoolean(req.body.isVertical, true);
+      }
+
+      if (
+        req.body.is18Plus !==
+        undefined
+      ) {
+
+        episode.is18Plus =
+          parseBoolean(req.body.is18Plus);
       }
 
 
@@ -279,6 +291,7 @@ const updateDramaEpisode =
         success: true,
         message:
           "Drama episode updated successfully",
+        warning: getAdultContentWarning(episode.is18Plus),
 
         episode,
       });

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import API from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import Logo from "../components/Logo";
 import "../pages/Dashboard.css"; // Uses shared .login-page classes
 
 const AdminLogin = () => {
@@ -43,7 +44,7 @@ const AdminLogin = () => {
         {/* Brand */}
         <div className="login-brand">
           <div className="login-logo">
-            <img src="/nazar-logo.png" alt="Nazar Logo" />
+            <Logo alt="Nazar Logo" />
           </div>
           <h1>Nazar OTT</h1>
           <p>Sign in to your Admin Panel</p>

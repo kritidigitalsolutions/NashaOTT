@@ -73,6 +73,11 @@ const movieSchema = new mongoose.Schema(
       default: false
     },
 
+    is18Plus: {
+      type: Boolean,
+      default: false
+    },
+
     rating: {
       type: Number,
       min: 0,

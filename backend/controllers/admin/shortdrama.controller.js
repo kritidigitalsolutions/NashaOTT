@@ -7,6 +7,7 @@ const DramaEpisode = require(
 );
 
 const { getMediaUrl, deleteMedia } = require("../../utils/mediaUrl");
+const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
 
 
 // PARSE JSON
@@ -143,8 +144,10 @@ const addShortDrama = async (
         ),
 
         isPremium:
-          req.body.isPremium ===
-          "true",
+          parseBoolean(req.body.isPremium),
+
+        is18Plus:
+          parseBoolean(req.body.is18Plus),
 
         isComingSoon:
           req.body.isComingSoon === "true",
@@ -173,6 +176,7 @@ const addShortDrama = async (
       success: true,
       message:
         "Short drama added successfully",
+      warning: getAdultContentWarning(shortDrama.is18Plus),
       shortDrama,
     });
 
@@ -301,8 +305,12 @@ const updateShortDrama =
       drama.category = category;
 
       drama.isPremium =
-        req.body.isPremium ===
-        "true";
+        parseBoolean(req.body.isPremium);
+
+      if (req.body.is18Plus !== undefined) {
+        drama.is18Plus =
+          parseBoolean(req.body.is18Plus);
+      }
 
       drama.isComingSoon =
         req.body.isComingSoon === "true";
@@ -422,6 +430,7 @@ const updateShortDrama =
         success: true,
         message:
           "Short drama updated successfully",
+        warning: getAdultContentWarning(drama.is18Plus),
         drama,
       });
 

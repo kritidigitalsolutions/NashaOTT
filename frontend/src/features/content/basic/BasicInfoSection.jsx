@@ -7,6 +7,7 @@ import {
   Layers,
   Rocket,
   Lock,
+  ShieldAlert,
   ArrowUpCircle,
 } from "lucide-react";
 
@@ -282,7 +283,51 @@ export default function BasicInfoSection({
             Premium Content
           </span>
         </label>
+
+        <label
+          className="checkbox-row"
+          style={{
+            flex: 1,
+            minWidth: "200px",
+            background:
+              "rgba(245, 158, 11, 0.12)",
+            borderColor:
+              "rgba(245, 158, 11, 0.25)",
+          }}
+        >
+          <input
+            type="checkbox"
+            name="is18Plus"
+            onChange={ch}
+            checked={form.is18Plus}
+          />
+
+          <span
+            style={{
+              color: "var(--orange)",
+            }}
+          >
+            <ShieldAlert
+              size={16}
+              style={{ marginRight: 8 }}
+            />
+
+            18+ Content Warning
+          </span>
+        </label>
       </div>
+
+      {form.is18Plus && (
+        <p
+          style={{
+            marginTop: 12,
+            color: "var(--orange)",
+            fontSize: "0.85rem",
+          }}
+        >
+          Warning: this title will be marked for adult audiences.
+        </p>
+      )}
 
       {form.isComingSoon && (
         <div

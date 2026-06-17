@@ -44,6 +44,11 @@ const episodeSchema = new mongoose.Schema(
     duration: {
       type: String,
       default: ""
+    },
+
+    is18Plus: {
+      type: Boolean,
+      default: false
     }
   },
   {

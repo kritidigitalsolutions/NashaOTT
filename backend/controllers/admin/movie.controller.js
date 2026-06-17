@@ -1,5 +1,6 @@
 const Movie = require("../../models/movie.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
+const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
 
 // ========================================
 // HELPERS
@@ -160,7 +161,10 @@ const addMovie = async (req, res) => {
         normalizeDateInput(req.body.releaseDate),
 
       isPremium:
-        req.body.isPremium === "true",
+        parseBoolean(req.body.isPremium),
+
+      is18Plus:
+        parseBoolean(req.body.is18Plus),
 
       rating: req.body.rating || 0,
 
@@ -174,6 +178,7 @@ const addMovie = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Movie added successfully",
+      warning: getAdultContentWarning(movie.is18Plus),
       movie,
     });
 
@@ -391,7 +396,11 @@ const updateMovie = async (req, res) => {
     }
 
     movie.isPremium =
-      req.body.isPremium === "true";
+      parseBoolean(req.body.isPremium);
+
+    if (req.body.is18Plus !== undefined) {
+      movie.is18Plus = parseBoolean(req.body.is18Plus);
+    }
 
     movie.category = category;
 
@@ -502,6 +511,7 @@ const updateMovie = async (req, res) => {
     return res.json({
       success: true,
       message: "Movie updated successfully",
+      warning: getAdultContentWarning(movie.is18Plus),
       movie,
     });
 

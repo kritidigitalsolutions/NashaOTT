@@ -1,5 +1,6 @@
 import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
+import Logo from "./Logo";
 // import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
 import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard } from "lucide-react";
 //new things
@@ -29,7 +30,7 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
       {/* ── Brand ── */}
       <div className="sidebar-brand">
         <div className="sidebar-logo">
-          <img src="/nazar-logo.png" alt="Nazar Logo" />
+          <Logo alt="Nazar Logo" />
         </div>
         <div>
           <div className="sidebar-title">Nazar OTT</div>

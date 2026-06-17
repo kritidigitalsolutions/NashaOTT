@@ -2,6 +2,7 @@ import { useState } from "react";
 import API from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
+import Logo from "../components/Logo";
 import "./Dashboard.css";
 
 const ResetPassword = () => {
@@ -58,7 +59,7 @@ const ResetPassword = () => {
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-brand">
           <div className="login-logo">
-            <img src="/nazar-logo.png" alt="Nazar Logo" />
+            <Logo alt="Nazar Logo" />
           </div>
           <h1>Set New Password</h1>
           <p>Create a strong password</p>

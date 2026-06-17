@@ -37,6 +37,11 @@ const dramaEpisodeSchema =
         default: true,
       },
 
+      is18Plus: {
+        type: Boolean,
+        default: false,
+      },
+
       views: {
         type: Number,
         default: 0,

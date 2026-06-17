@@ -1,6 +1,7 @@
 const Episode = require("../../models/episode.model");
 const Series = require("../../models/series.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
+const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
 
 // Helper to update totalSeasons and totalEpisodes in Series
 const updateSeriesStats = async (seriesId) => {
@@ -31,7 +32,8 @@ const addEpisode = async (req, res) => {
       episodeNumber: Number(req.body.episodeNumber),
       duration: req.body.duration,
       videoUrl: getMediaUrl(video, req.body.videoUrl || ""),
-      thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || "")
+      thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || ""),
+      is18Plus: parseBoolean(req.body.is18Plus)
     };
 
     const existingEpisode =
@@ -54,7 +56,12 @@ const addEpisode = async (req, res) => {
     await updateSeriesStats(req.body.seriesId);
 
 
-    return res.status(201).json({ success: true, message: "Episode added successfully", episode });
+    return res.status(201).json({
+      success: true,
+      message: "Episode added successfully",
+      warning: getAdultContentWarning(episode.is18Plus),
+      episode
+    });
   } catch (error) {
 
     if (error.code === 11000) {
@@ -103,6 +110,10 @@ const updateEpisode = async (req, res) => {
       updateData.duration =
         req.body.duration;
 
+    if (req.body.is18Plus !== undefined)
+      updateData.is18Plus =
+        parseBoolean(req.body.is18Plus);
+
     if (video) {
       await deleteMedia(episode.videoUrl);
       updateData.videoUrl = getMediaUrl(video);
@@ -123,7 +134,12 @@ const updateEpisode = async (req, res) => {
     // Update totalSeasons in case seasonNumber changed
     await updateSeriesStats(updatedEpisode.seriesId);
 
-    return res.json({ success: true, message: "Episode updated successfully", episode: updatedEpisode });
+    return res.json({
+      success: true,
+      message: "Episode updated successfully",
+      warning: getAdultContentWarning(updatedEpisode.is18Plus),
+      episode: updatedEpisode
+    });
 
 
   } catch (error) {
