@@ -37,7 +37,8 @@ const defaultAllowed = [
   process.env.ADMIN_URL,
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://scintillating-meerkat-efbf09.netlify.app"
+  "https://scintillating-meerkat-efbf09.netlify.app",
+  "https://nazarott.netlify.app"
 ].filter(Boolean);
 
 const allowedOrigins = [...new Set([...frontendUrls, ...adminUrls, ...defaultAllowed])];

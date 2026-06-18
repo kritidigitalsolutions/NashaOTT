@@ -234,13 +234,16 @@ const getAllMovies = async (req, res) => {
 
     const total = await Movie.countDocuments();
 
-    return res.json({
-      success: true,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      movies,
-    });
+  return res.json({
+  success: true,
+  total,
+  page,
+  pages: Math.ceil(total / limit),
+  movies: movies.map(movie => ({
+    ...movie,
+    adultWarning: getAdultContentWarning(movie.is18Plus)
+  })),
+});
 
   } catch (error) {
 
@@ -308,11 +311,11 @@ const getMovieById = async (req, res) => {
       });
     }
 
-    return res.json({
-      success: true,
-      movie,
-    });
-
+return res.json({
+  success: true,
+  warning: getAdultContentWarning(movie.is18Plus),
+  movie,
+});
   } catch (error) {
 
     return res.status(500).json({
@@ -395,8 +398,9 @@ const updateMovie = async (req, res) => {
       movie.releaseDate = null;
     }
 
-    movie.isPremium =
-      parseBoolean(req.body.isPremium);
+   if (req.body.isPremium !== undefined) {
+  movie.isPremium = parseBoolean(req.body.isPremium);
+}
 
     if (req.body.is18Plus !== undefined) {
       movie.is18Plus = parseBoolean(req.body.is18Plus);

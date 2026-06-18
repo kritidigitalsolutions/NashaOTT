@@ -145,13 +145,16 @@ const getAllSeries = async (req, res) => {
 
     const total = await Series.countDocuments();
 
-    return res.json({
-      success: true,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      series,
-    });
+   return res.json({
+  success: true,
+  total,
+  page,
+  pages: Math.ceil(total / limit),
+  series: series.map(item => ({
+    ...item,
+    adultWarning: getAdultContentWarning(item.is18Plus)
+  })),
+});
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to fetch series" });
   }
@@ -190,7 +193,11 @@ const getSeriesById = async (req, res) => {
     if (!series) {
       return res.status(404).json({ success: false, message: "Series not found" });
     }
-    return res.json({ success: true, series });
+    return res.json({
+  success: true,
+  warning: getAdultContentWarning(series.is18Plus),
+  series
+});
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to fetch series" });
   }
@@ -225,7 +232,9 @@ const updateSeries = async (req, res) => {
     if (!series.isComingSoon && req.body.releaseDate === undefined) {
       series.releaseDate = null;
     }
-    series.isPremium = parseBoolean(req.body.isPremium);
+if (req.body.isPremium !== undefined) {
+  series.isPremium = parseBoolean(req.body.isPremium);
+}
     if (req.body.is18Plus !== undefined) {
       series.is18Plus = parseBoolean(req.body.is18Plus);
     }

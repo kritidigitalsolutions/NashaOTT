@@ -1,5 +1,5 @@
 const Movie = require("../models/movie.model");
-
+const { getAdultContentWarning } = require("../utils/boolean");
 // ========================================
 // GET ALL MOVIES
 // ========================================
@@ -21,13 +21,16 @@ const getAllMovies = async (req, res) => {
 
     const total = await Movie.countDocuments({});
 
-    return res.json({
-      success: true,
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      movies,
-    });
+ return res.json({
+  success: true,
+  total,
+  page,
+  pages: Math.ceil(total / limit),
+  movies: movies.map(movie => ({
+    ...movie,
+    adultWarning: getAdultContentWarning(movie.is18Plus)
+  })),
+});
 
   } catch (error) {
 
@@ -57,9 +60,10 @@ const getMovieBySlug = async (req, res) => {
     }
 
     return res.json({
-      success: true,
-      movie,
-    });
+  success: true,
+  warning: getAdultContentWarning(movie.is18Plus),
+  movie,
+});
 
   } catch (error) {
 
@@ -88,10 +92,11 @@ const getMovieById = async (req, res) => {
       });
     }
 
-    return res.json({
-      success: true,
-      movie,
-    });
+  return res.json({
+  success: true,
+  warning: getAdultContentWarning(movie.is18Plus),
+  movie,
+});
 
   } catch (error) {
 

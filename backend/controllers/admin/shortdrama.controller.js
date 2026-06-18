@@ -304,8 +304,10 @@ const updateShortDrama =
 
       drama.category = category;
 
-      drama.isPremium =
-        parseBoolean(req.body.isPremium);
+     if (req.body.isPremium !== undefined) {
+  drama.isPremium =
+    parseBoolean(req.body.isPremium);
+}
 
       if (req.body.is18Plus !== undefined) {
         drama.is18Plus =

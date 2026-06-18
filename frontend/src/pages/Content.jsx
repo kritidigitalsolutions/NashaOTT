@@ -115,7 +115,13 @@ export default function Content() {
 
   // Add season/episode forms
   const [showAddEpisodeForm, setShowAddEpisodeForm] = useState(null); // seasonNumber
-  const [newEpisode, setNewEpisode] = useState({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "", is18Plus: false });
+  const [newEpisode, setNewEpisode] = useState({
+  title: "",
+  episodeNumber: "",
+  duration: "",
+  description: "",
+  seasonNumber: ""
+});
   const [newEpisodeVideo, setNewEpisodeVideo] = useState(null);
   const [newEpisodeThumbnail, setNewEpisodeThumbnail] = useState(null);
   const [showAddSeasonForm, setShowAddSeasonForm] = useState(false);
@@ -305,7 +311,6 @@ export default function Content() {
       formData.append("seasonNumber", epData.seasonNumber);
       formData.append("duration", epData.duration || "");
       formData.append("description", epData.description || "");
-      formData.append("is18Plus", String(epData.is18Plus));
       formData.append("videoUrl", videoUrl);
       formData.append("thumbnailUrl", thumbnailUrl);
 
@@ -314,7 +319,7 @@ export default function Content() {
       alert("Episode added successfully!");
       setShowAddEpisodeForm(null);
       setShowAddSeasonForm(false);
-      setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "", is18Plus: false });
+      setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" });
       setNewSeasonNumber("");
       setNewEpisodeVideo(null);
       setNewEpisodeThumbnail(null);
@@ -464,8 +469,19 @@ export default function Content() {
 
       const formData = new FormData();
       // Basic text fields
-      const textFields = ["title", "description", "language", "duration", "rating", "releaseYear", "isPremium", "is18Plus", "isComingSoon", "releaseDate", "priority"];
-
+const textFields = [
+  "title",
+  "description",
+  "language",
+  "duration",
+  "rating",
+  "releaseYear",
+  "isPremium",
+  "is18Plus",
+  "isComingSoon",
+  "releaseDate",
+  "priority"
+];
       textFields.forEach(k => {
         const value = editData[k];
 
@@ -533,7 +549,7 @@ export default function Content() {
       }
 
       const formData = new FormData();
-      const textFields = ["title", "description", "seasonNumber", "episodeNumber", "duration", "is18Plus"];
+      const textFields = ["title", "description", "seasonNumber", "episodeNumber", "duration"];
       textFields.forEach((k) => {
 
         // Prevent sending invalid null date
@@ -1449,6 +1465,25 @@ export default function Content() {
                         <option value="yes">Yes</option>
                       </select>
                     </div>
+                    <div className="form-row">
+  <label className="form-label">
+    18+ Content
+  </label>
+
+  <select
+    className="form-input"
+    value={editData.is18Plus ? "yes" : "no"}
+    onChange={(e) =>
+      setEditData((s) => ({
+        ...s,
+        is18Plus: e.target.value === "yes",
+      }))
+    }
+  >
+    <option value="no">No</option>
+    <option value="yes">Yes</option>
+  </select>
+</div>
                     <div className="form-row">
                       <label className="form-label">Coming Soon</label>
                       <select className="form-input" value={editData.isComingSoon ? "yes" : "no"} onChange={e => setEditData(s => ({ ...s, isComingSoon: e.target.value === "yes" }))}>

@@ -32,8 +32,7 @@ const addEpisode = async (req, res) => {
       episodeNumber: Number(req.body.episodeNumber),
       duration: req.body.duration,
       videoUrl: getMediaUrl(video, req.body.videoUrl || ""),
-      thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || ""),
-      is18Plus: parseBoolean(req.body.is18Plus)
+      thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || "")
     };
 
     const existingEpisode =
@@ -59,7 +58,6 @@ const addEpisode = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: "Episode added successfully",
-      warning: getAdultContentWarning(episode.is18Plus),
       episode
     });
   } catch (error) {
@@ -109,10 +107,6 @@ const updateEpisode = async (req, res) => {
     if (req.body.duration !== undefined)
       updateData.duration =
         req.body.duration;
-
-    if (req.body.is18Plus !== undefined)
-      updateData.is18Plus =
-        parseBoolean(req.body.is18Plus);
 
     if (video) {
       await deleteMedia(episode.videoUrl);

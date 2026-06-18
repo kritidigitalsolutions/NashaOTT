@@ -1,5 +1,6 @@
 const Series = require("../models/series.model");
 const Episode = require("../models/episode.model");
+const { getAdultContentWarning } = require("../utils/boolean");
 
 // ========================================
 // GET ALL SERIES
@@ -70,11 +71,11 @@ const getSeriesBySlug = async (req, res) => {
 
     const seriesObj = series.toObject();
 
-    return res.json({
-      success: true,
-      series: { ...seriesObj, seasons }
-    });
-
+   return res.json({
+  success: true,
+  warning: getAdultContentWarning(series.is18Plus),
+  series: { ...seriesObj, seasons }
+});
 
 
 
@@ -115,9 +116,10 @@ const getSeriesById = async (req, res) => {
     const seriesObj = series.toObject();
 
     return res.json({
-      success: true,
-      series: { ...seriesObj, seasons }
-    });
+  success: true,
+  warning: getAdultContentWarning(series.is18Plus),
+  series: { ...seriesObj, seasons }
+});
 
 
 

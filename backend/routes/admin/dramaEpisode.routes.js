@@ -44,17 +44,17 @@ const dramaEpisodeUpload =
 // ========================================
 router.post("/:shortDramaId/add",isAdmin,dramaEpisodeUpload,addDramaEpisode);
 
+// ========================================
+// SEARCH EPISODES
+// ========================================
+router.get("/search",isAdmin,searchDramaEpisodes);
+
 
 // ========================================
 // GET ALL EPISODES
 // ========================================
 router.get("/:shortDramaId",isAdmin,getDramaEpisodes);
 
-
-// ========================================
-// SEARCH EPISODES
-// ========================================
-router.get("/search",isAdmin,searchDramaEpisodes);
 
 
 // ========================================

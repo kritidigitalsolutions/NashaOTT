@@ -4,8 +4,8 @@ const { getAllSeries, getSeriesBySlug, getSeriesById, getEpisodesBySeries } = re
 
 router.get("/", getAllSeries);
 router.get("/slug/:slug", getSeriesBySlug);
-router.get("/:id", getSeriesById);
 router.get("/episodes/:seriesId", getEpisodesBySeries);
+router.get("/:id", getSeriesById);
 
 
 module.exports = router;
