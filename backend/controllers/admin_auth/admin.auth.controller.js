@@ -2,15 +2,7 @@ const Admin = require("../../models/admin.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const AdminOtp = require("../../models/admin.otp.model");
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const sendEmail = require("../../utils/sendEmail");
 
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
@@ -75,9 +67,17 @@ exports.loginAdmin = async (req, res) => {
 exports.sendForgotPasswordOtp = async (req, res) => {
   try {
     const { email } = req.body;
+    const normalizedEmail = email?.toLowerCase().trim();
+
+    if (!normalizedEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required"
+      });
+    }
 
     const admin = await Admin.findOne({
-      email: email.toLowerCase()
+      email: normalizedEmail
     });
 
     if (!admin) {
@@ -90,21 +90,21 @@ exports.sendForgotPasswordOtp = async (req, res) => {
     const otp = generateOtp();
 
     await AdminOtp.deleteMany({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       purpose: "forgot-password"
     });
 
     await AdminOtp.create({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       otp,
       purpose: "forgot-password",
       expiresAt: new Date(Date.now() + 5 * 60 * 1000)
     });
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email.toLowerCase(),
+    await sendEmail({
+      to: normalizedEmail,
       subject: "Forgot Password OTP",
+      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
       html: `<h3>Your OTP is ${otp}</h3><p>Valid for 5 minutes.</p>`
     });
 
@@ -125,8 +125,9 @@ exports.sendForgotPasswordOtp = async (req, res) => {
 exports.verifyForgotPasswordOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
+    const normalizedEmail = email?.toLowerCase().trim();
 
-    if (!email || !otp) {
+    if (!normalizedEmail || !otp) {
       return res.status(400).json({
         success: false,
         message: "Email and OTP are required"
@@ -134,7 +135,7 @@ exports.verifyForgotPasswordOtp = async (req, res) => {
     }
 
     const record = await AdminOtp.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       otp,
       purpose: "forgot-password",
       expiresAt: { $gt: new Date() }
@@ -163,6 +164,14 @@ exports.verifyForgotPasswordOtp = async (req, res) => {
 exports.resetForgotPassword = async (req, res) => {
   try {
     const { email, otp, newPassword, confirmPassword } = req.body;
+    const normalizedEmail = email?.toLowerCase().trim();
+
+    if (!normalizedEmail || !otp || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Email, OTP, and password are required"
+      });
+    }
 
     if (newPassword !== confirmPassword) {
       return res.status(400).json({
@@ -172,7 +181,7 @@ exports.resetForgotPassword = async (req, res) => {
     }
 
     const record = await AdminOtp.findOne({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       otp,
       purpose: "forgot-password",
       expiresAt: { $gt: new Date() }
@@ -186,7 +195,7 @@ exports.resetForgotPassword = async (req, res) => {
     }
 
     const admin = await Admin.findOne({
-      email: email.toLowerCase()
+      email: normalizedEmail
     });
 
     if (!admin) {
@@ -200,7 +209,7 @@ exports.resetForgotPassword = async (req, res) => {
     await admin.save();
 
     await AdminOtp.deleteMany({
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       purpose: "forgot-password"
     });
 

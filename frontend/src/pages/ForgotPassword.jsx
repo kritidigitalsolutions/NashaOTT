@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import API from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import Logo from "../components/Logo";
 import "./Dashboard.css";
 
 const ForgotPassword = () => {

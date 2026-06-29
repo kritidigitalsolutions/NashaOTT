@@ -1,15 +1,7 @@
 const Admin = require("../../models/admin.model");
 const AdminOtp = require("../../models/admin.otp.model");
 const bcrypt = require("bcryptjs");
-const nodemailer = require("nodemailer");
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+const sendEmail = require("../../utils/sendEmail");
 
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
@@ -50,7 +42,8 @@ exports.sendPasswordOtp = async (req, res) => {
     const otp = generateOtp();
 
     await AdminOtp.deleteMany({
-      email: admin.email
+      email: admin.email,
+      purpose: "change-password"
     });
 
     await AdminOtp.create({
@@ -60,10 +53,10 @@ exports.sendPasswordOtp = async (req, res) => {
       expiresAt: new Date(Date.now() + 5 * 60 * 1000)
     });
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+    await sendEmail({
       to: admin.email,
       subject: "Password Change OTP",
+      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
       html: `<h3>Your OTP is ${otp}</h3><p>Valid for 5 minutes.</p>`
     });
 
@@ -149,6 +142,8 @@ exports.changePassword = async (req, res) => {
 exports.sendEmailOtp = async (req, res) => {
   try {
     const { oldEmail, newEmail } = req.body;
+    const normalizedOldEmail = oldEmail?.toLowerCase().trim();
+    const normalizedNewEmail = newEmail?.toLowerCase().trim();
 
     const admin = await Admin.findById(req.user.id);
 
@@ -159,7 +154,14 @@ exports.sendEmailOtp = async (req, res) => {
       });
     }
 
-    if (admin.email !== oldEmail.toLowerCase()) {
+    if (!normalizedOldEmail || !normalizedNewEmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Old email and new email are required"
+      });
+    }
+
+    if (admin.email !== normalizedOldEmail) {
       return res.status(400).json({
         success: false,
         message: "Old email does not match"
@@ -167,7 +169,7 @@ exports.sendEmailOtp = async (req, res) => {
     }
 
     const exists = await Admin.findOne({
-      email: newEmail.toLowerCase()
+      email: normalizedNewEmail
     });
 
     if (exists) {
@@ -180,21 +182,22 @@ exports.sendEmailOtp = async (req, res) => {
     const otp = generateOtp();
 
     await AdminOtp.deleteMany({
-      email: oldEmail.toLowerCase()
+      email: normalizedOldEmail,
+      purpose: "change-email"
     });
 
     await AdminOtp.create({
-      email: oldEmail.toLowerCase(),
-      newEmail: newEmail.toLowerCase(),
+      email: normalizedOldEmail,
+      newEmail: normalizedNewEmail,
       otp,
       purpose: "change-email",
       expiresAt: new Date(Date.now() + 5 * 60 * 1000)
     });
 
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: oldEmail.toLowerCase(),
+    await sendEmail({
+      to: normalizedOldEmail,
       subject: "Email Change OTP",
+      text: `Your OTP is ${otp}. It is valid for 5 minutes.`,
       html: `<h3>Your OTP is ${otp}</h3><p>Valid for 5 minutes.</p>`
     });
 
@@ -215,10 +218,19 @@ exports.sendEmailOtp = async (req, res) => {
 exports.changeEmail = async (req, res) => {
   try {
     const { oldEmail, newEmail, otp } = req.body;
+    const normalizedOldEmail = oldEmail?.toLowerCase().trim();
+    const normalizedNewEmail = newEmail?.toLowerCase().trim();
+
+    if (!normalizedOldEmail || !normalizedNewEmail || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Old email, new email, and OTP are required"
+      });
+    }
 
     const record = await AdminOtp.findOne({
-      email: oldEmail.toLowerCase(),
-      newEmail: newEmail.toLowerCase(),
+      email: normalizedOldEmail,
+      newEmail: normalizedNewEmail,
       otp,
       purpose: "change-email",
       expiresAt: { $gt: new Date() }
@@ -240,14 +252,14 @@ exports.changeEmail = async (req, res) => {
       });
     }
 
-    if (admin.email !== oldEmail.toLowerCase()) {
+    if (admin.email !== normalizedOldEmail) {
       return res.status(400).json({
         success: false,
         message: "Old email mismatch"
       });
     }
 
-    admin.email = newEmail.toLowerCase();
+    admin.email = normalizedNewEmail;
     await admin.save();
 
     await AdminOtp.findByIdAndDelete(record._id);
