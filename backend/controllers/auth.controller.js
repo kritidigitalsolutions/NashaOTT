@@ -2,6 +2,7 @@ const jwt = require("jsonwebtoken");
 
 const OTP = require("../models/user.otp.model");
 const User = require("../models/user.model");
+const { sendOtpSms } = require("../utils/smsGh.service");
 
 const { admin } = require("../config/firebase");
 const { OAuth2Client } = require("google-auth-library");
@@ -106,6 +107,24 @@ exports.sendOTP = async (req, res) => {
       100000 + Math.random() * 900000
     ).toString();
 
+    // check if user exists
+    const user = await User.findOne({
+      phone: normalizedPhone,
+    });
+
+    const isNewUser =
+      !user || !user.profileComplete;
+
+    // console otp
+    console.log(
+      `📱 OTP for ${normalizedPhone}: ${otp} | isNewUser: ${isNewUser}`
+    );
+
+    await sendOtpSms({
+      phone: normalizedPhone,
+      otp,
+    });
+
     // remove old otp
     await OTP.deleteMany({
       phone: normalizedPhone,
@@ -120,24 +139,10 @@ exports.sendOTP = async (req, res) => {
       ),
     });
 
-    // check if user exists
-    const user = await User.findOne({
-      phone: normalizedPhone,
-    });
-
-    const isNewUser =
-      !user || !user.profileComplete;
-
-    // console otp
-    console.log(
-      `📱 OTP for ${normalizedPhone}: ${otp} | isNewUser: ${isNewUser}`
-    );
-
     return res.status(200).json({
       success: true,
-      message: `OTP generated successfully. Your OTP is: ${otp}`,
+      message: "OTP sent successfully",
       isNewUser,
-      otp,
     });
 
   } catch (error) {
@@ -148,7 +153,7 @@ exports.sendOTP = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Failed to generate OTP",
+      message: "Failed to send OTP",
     });
   }
 };
