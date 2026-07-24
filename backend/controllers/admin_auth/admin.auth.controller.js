@@ -22,6 +22,12 @@ exports.loginAdmin = async (req, res) => {
       });
     }
 
+    if (admin.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Account is disabled. Contact Super Admin."
+      });
+    }
 
     const isMatch = await bcrypt.compare(
       password,
@@ -37,7 +43,8 @@ exports.loginAdmin = async (req, res) => {
 
    const token = jwt.sign(
   {
-    id: admin._id
+    id: admin._id,
+    role: admin.role
   },
   process.env.JWT_SECRET,
   {
@@ -52,7 +59,9 @@ exports.loginAdmin = async (req, res) => {
      admin: {
   _id: admin._id,
   name: admin.name,
-  email: admin.email
+  email: admin.email,
+  role: admin.role,
+  permissions: admin.permissions || []
 }
     });
 

@@ -9,13 +9,13 @@ const {
 } = require("../../controllers/admin/plan.controller");
 
 
-const { isAdmin } = require("../../middlewares/admin.middleware");
+const { isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 // ================= ADMIN PLAN ROUTES =================
 
-router.post("/", isAdmin, createPlan);
-router.get("/", isAdmin, getAllPlans);
-router.patch("/:id", isAdmin, updatePlan);
-router.delete("/:id", isAdmin, deletePlan);
+router.post("/", isAdmin, hasPermission("plans"), createPlan);
+router.get("/", isAdmin, hasPermission("plans"), getAllPlans);
+router.patch("/:id", isAdmin, hasPermission("plans"), updatePlan);
+router.delete("/:id", isAdmin, hasPermission("plans"), deletePlan);
 
 module.exports = router;

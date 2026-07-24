@@ -5,25 +5,41 @@ const adminSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
 
     email: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
       lowercase: true,
-      trim: true
     },
 
     password: {
       type: String,
       required: true,
-      minlength: 6
-    }
+      minlength: 6,
+    },
+
+    role: {
+      type: String,
+      enum: ["ADMIN", "SUBADMIN"],
+      default: "ADMIN",
+    },
+
+    permissions: {
+      type: [String],
+      default: [],
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 

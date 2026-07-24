@@ -83,6 +83,7 @@ export const createContent = async ({
   formData.append("isPremium", String(form.isPremium));
   formData.append("is18Plus", String(form.is18Plus));
   formData.append("isComingSoon", String(form.isComingSoon));
+  formData.append("isPublished", String(form.isPublished !== undefined ? form.isPublished : true));
   formData.append("releaseDate", form.releaseDate || "");
   formData.append("priority", Number(form.priority) || 0);
   formData.append("rating", form.rating ? Number(form.rating) : 0);
@@ -96,7 +97,10 @@ export const createContent = async ({
 
   formData.append(
     "category",
-    JSON.stringify(form.category ? [form.category] : [])
+    JSON.stringify(
+      (Array.isArray(form.category) ? form.category : [form.category])
+        .filter(Boolean)
+    )
   );
 
   // Send the Bunny CDN URLs directly as text inputs!

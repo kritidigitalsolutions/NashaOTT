@@ -8,7 +8,7 @@ const EMPTY_FORM = {
   releaseYear: "",
   duration: "",
   genre: "",
-  category: "",
+  category: [],
   rating: "",
   videoUrl: "",
   trailerUrl: "",
@@ -17,6 +17,7 @@ const EMPTY_FORM = {
   isPremium: false,
   is18Plus: false,
   isComingSoon: false,
+  isPublished: true,
   releaseDate: "",
   priority: 0,
   cast: [

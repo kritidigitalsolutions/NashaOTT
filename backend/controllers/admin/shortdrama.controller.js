@@ -8,6 +8,7 @@ const DramaEpisode = require(
 
 const { getMediaUrl, deleteMedia } = require("../../utils/mediaUrl");
 const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
+const { sendContentUploadNotification } = require("../../utils/notificationHelper");
 
 
 // PARSE JSON
@@ -171,6 +172,13 @@ const addShortDrama = async (
 
         category,
       });
+
+    // Fire-and-forget: notify all users about the new short drama
+    sendContentUploadNotification({
+      content: shortDrama,
+      contentType: "shortdrama",
+      createdBy: req.user.id,
+    });
 
     return res.status(201).json({
       success: true,

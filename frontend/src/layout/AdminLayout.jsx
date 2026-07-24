@@ -33,7 +33,7 @@ export default function AdminLayout() {
         />
 
         <main className="page-body">
-          <Outlet />
+          <Outlet context={{ adminRole: localStorage.getItem("adminRole") || "ADMIN" }} />
         </main>
       </div>
     </div>

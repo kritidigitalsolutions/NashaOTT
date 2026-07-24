@@ -2,6 +2,7 @@ const Series = require("../../models/series.model");
 const Episode = require("../../models/episode.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
 const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
+const { sendContentUploadNotification } = require("../../utils/notificationHelper");
 
 // ========================================
 // HELPERS
@@ -13,6 +14,16 @@ const parseJSON = (value, defaultValue = []) => {
   } catch {
     return defaultValue;
   }
+};
+
+const parseStringArray = (value) => {
+  const parsed = parseJSON(value);
+  const values = Array.isArray(parsed) ? parsed.flat() : [parsed];
+
+  return values
+    .filter((item) => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const sanitizeCast = (cast = []) => {
@@ -56,7 +67,7 @@ const addSeries = async (req, res) => {
 
   try {
     const genre = parseJSON(req.body.genre);
-    const category = parseJSON(req.body.category);
+    const category = parseStringArray(req.body.category);
     const cast = parseJSON(req.body.cast);
 
     if (!req.body.title) {
@@ -108,11 +119,20 @@ const addSeries = async (req, res) => {
       isComingSoon: req.body.isComingSoon === "true",
       releaseDate: normalizeDateInput(req.body.releaseDate),
       isPremium: parseBoolean(req.body.isPremium),
+      isPublished: parseBoolean(req.body.isPublished),
       is18Plus: parseBoolean(req.body.is18Plus),
+      isHide:parseBoolean(req.body.isHide),
       rating: req.body.rating || 0,
       cast: sanitizeCast(cast),
       category,
       priority,
+    });
+
+    // Fire-and-forget: notify all users about the new series
+    sendContentUploadNotification({
+      content: series,
+      contentType: "series",
+      createdBy: req.user.id,
     });
 
     return res.status(201).json({
@@ -137,24 +157,32 @@ const getAllSeries = async (req, res) => {
     const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const series = await Series.find()
+    const query = {};
+    if (req.query.is18Plus !== undefined) {
+      query.is18Plus = req.query.is18Plus === "true";
+    }
+    if (req.query.isHide !== undefined) {
+      query.isHide = req.query.isHide === "true";
+    }
+
+    const series = await Series.find(query)
       .sort({ priority: -1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const total = await Series.countDocuments();
+    const total = await Series.countDocuments(query);
 
-   return res.json({
-  success: true,
-  total,
-  page,
-  pages: Math.ceil(total / limit),
-  series: series.map(item => ({
-    ...item,
-    adultWarning: getAdultContentWarning(item.is18Plus)
-  })),
-});
+    return res.json({
+      success: true,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      series: series.map(item => ({
+        ...item,
+        adultWarning: getAdultContentWarning(item.is18Plus)
+      })),
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to fetch series" });
   }
@@ -194,10 +222,10 @@ const getSeriesById = async (req, res) => {
       return res.status(404).json({ success: false, message: "Series not found" });
     }
     return res.json({
-  success: true,
-  warning: getAdultContentWarning(series.is18Plus),
-  series
-});
+      success: true,
+      warning: getAdultContentWarning(series.is18Plus),
+      series
+    });
   } catch (error) {
     return res.status(500).json({ success: false, message: "Failed to fetch series" });
   }
@@ -232,12 +260,20 @@ const updateSeries = async (req, res) => {
     if (!series.isComingSoon && req.body.releaseDate === undefined) {
       series.releaseDate = null;
     }
-if (req.body.isPremium !== undefined) {
-  series.isPremium = parseBoolean(req.body.isPremium);
-}
+    if (req.body.isPremium !== undefined) {
+      series.isPremium = parseBoolean(req.body.isPremium);
+    }
+    if (req.body.isPublished !== undefined) {
+      series.isPublished = parseBoolean(req.body.isPublished);
+    }
     if (req.body.is18Plus !== undefined) {
       series.is18Plus = parseBoolean(req.body.is18Plus);
     }
+    if (req.body.isHide !== undefined) {
+    series.isHide = series.is18Plus
+        ? parseBoolean(req.body.isHide)
+        : false;
+}
     series.category = category;
 
     if (req.files?.poster?.[0]) {
@@ -376,6 +412,19 @@ const deleteSeries = async (req, res) => {
 
 
 
+// ========================================
+// BULK TOGGLE HIDE ADULT
+// ========================================
+const bulkToggleHideAdult = async (req, res) => {
+  try {
+    const isHide = parseBoolean(req.body.isHide);
+    await Series.updateMany({ is18Plus: true }, { isHide });
+    return res.json({ success: true, message: `All adult series ${isHide ? 'hidden' : 'unhidden'} successfully` });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to bulk update adult series" });
+  }
+};
+
 module.exports = {
   addSeries,
   getAllSeries,
@@ -383,5 +432,6 @@ module.exports = {
   updateSeries,
   deleteSeries,
   searchSeries,
+  bulkToggleHideAdult,
 };
 

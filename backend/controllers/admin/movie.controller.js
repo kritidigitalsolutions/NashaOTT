@@ -1,6 +1,7 @@
 const Movie = require("../../models/movie.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
 const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
+const { sendContentUploadNotification } = require("../../utils/notificationHelper");
 
 // ========================================
 // HELPERS
@@ -12,6 +13,16 @@ const parseJSON = (value, defaultValue = []) => {
   } catch {
     return defaultValue;
   }
+};
+
+const parseStringArray = (value) => {
+  const parsed = parseJSON(value);
+  const values = Array.isArray(parsed) ? parsed.flat() : [parsed];
+
+  return values
+    .filter((item) => typeof item === "string")
+    .map((item) => item.trim())
+    .filter(Boolean);
 };
 
 const sanitizeCast = (cast = []) => {
@@ -54,7 +65,7 @@ const addMovie = async (req, res) => {
 
     const genre = parseJSON(req.body.genre);
 
-    const category = parseJSON(req.body.category);
+    const category = parseStringArray(req.body.category);
 
     const cast = parseJSON(req.body.cast);
 
@@ -162,9 +173,13 @@ const addMovie = async (req, res) => {
 
       isPremium:
         parseBoolean(req.body.isPremium),
+      isPublished: parseBoolean(req.body.isPublished),
 
       is18Plus:
         parseBoolean(req.body.is18Plus),
+
+      isHide:
+       parseBoolean(req.body.isHide),
 
       rating: req.body.rating || 0,
 
@@ -173,6 +188,13 @@ const addMovie = async (req, res) => {
       category,
 
       priority,
+    });
+
+    // Fire-and-forget: notify all users about the new movie
+    sendContentUploadNotification({
+      content: movie,
+      contentType: "movie",
+      createdBy: req.user.id,
     });
 
     return res.status(201).json({
@@ -223,7 +245,15 @@ const getAllMovies = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const movies = await Movie.find()
+    const query = {};
+    if (req.query.is18Plus !== undefined) {
+      query.is18Plus = req.query.is18Plus === "true";
+    }
+    if (req.query.isHide !== undefined) {
+      query.isHide = req.query.isHide === "true";
+    }
+
+    const movies = await Movie.find(query)
       .sort({
         priority: -1,
         createdAt: -1
@@ -232,18 +262,18 @@ const getAllMovies = async (req, res) => {
       .limit(limit)
       .lean();
 
-    const total = await Movie.countDocuments();
+    const total = await Movie.countDocuments(query);
 
-  return res.json({
-  success: true,
-  total,
-  page,
-  pages: Math.ceil(total / limit),
-  movies: movies.map(movie => ({
-    ...movie,
-    adultWarning: getAdultContentWarning(movie.is18Plus)
-  })),
-});
+    return res.json({
+      success: true,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      movies: movies.map(movie => ({
+        ...movie,
+        adultWarning: getAdultContentWarning(movie.is18Plus)
+      })),
+    });
 
   } catch (error) {
 
@@ -311,11 +341,11 @@ const getMovieById = async (req, res) => {
       });
     }
 
-return res.json({
-  success: true,
-  warning: getAdultContentWarning(movie.is18Plus),
-  movie,
-});
+    return res.json({
+      success: true,
+      warning: getAdultContentWarning(movie.is18Plus),
+      movie,
+    });
   } catch (error) {
 
     return res.status(500).json({
@@ -398,13 +428,22 @@ const updateMovie = async (req, res) => {
       movie.releaseDate = null;
     }
 
-   if (req.body.isPremium !== undefined) {
-  movie.isPremium = parseBoolean(req.body.isPremium);
+    if (req.body.isPremium !== undefined) {
+      movie.isPremium = parseBoolean(req.body.isPremium);
+    }
+    if (req.body.isPublished !== undefined) {
+      movie.isPublished = parseBoolean(req.body.isPublished);
+    }
+
+  if (req.body.is18Plus !== undefined) {
+  movie.is18Plus = parseBoolean(req.body.is18Plus);
 }
 
-    if (req.body.is18Plus !== undefined) {
-      movie.is18Plus = parseBoolean(req.body.is18Plus);
-    }
+if (req.body.isHide !== undefined) {
+  movie.isHide = movie.is18Plus
+    ? parseBoolean(req.body.isHide)
+    : false;
+}
 
     movie.category = category;
 
@@ -560,6 +599,20 @@ const deleteMovie = async (req, res) => {
 };
 
 
+// ========================================
+// BULK TOGGLE HIDE ADULT
+// ========================================
+
+const bulkToggleHideAdult = async (req, res) => {
+  try {
+    const isHide = parseBoolean(req.body.isHide);
+    await Movie.updateMany({ is18Plus: true }, { isHide });
+    return res.json({ success: true, message: `All adult movies ${isHide ? 'hidden' : 'unhidden'}` });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Failed to bulk update adult movies" });
+  }
+};
+
 module.exports = {
   addMovie,
   getAllMovies,
@@ -567,4 +620,5 @@ module.exports = {
   getMovieById,
   updateMovie,
   deleteMovie,
+  bulkToggleHideAdult,
 };

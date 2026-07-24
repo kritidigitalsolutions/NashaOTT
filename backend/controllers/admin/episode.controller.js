@@ -35,6 +35,13 @@ const addEpisode = async (req, res) => {
       thumbnail: getMediaUrl(thumbnail, req.body.thumbnailUrl || "")
     };
 
+    if (!episodeData.videoUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Episode video is required",
+      });
+    }
+
     const existingEpisode =
       await Episode.findOne({
         seriesId: episodeData.seriesId,

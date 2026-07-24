@@ -30,7 +30,7 @@ const QUICK_RESPONSES = [
   },
   {
     label: "⚡ App Cache Reset",
-    text: "Hi, please try clearing your browser cache or updating the Mirchi app to the latest version. Let us know if the issue persists.",
+    text: "Hi, please try clearing your browser cache or updating the Nazar app to the latest version. Let us know if the issue persists.",
   },
   {
     label: "📱 Request Specs",

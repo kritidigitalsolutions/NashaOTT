@@ -13,13 +13,31 @@ const getAllMovies = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
-    const movies = await Movie.find({})
+    const movies = await Movie.find({
+  isPublished: true,
+  $or: [
+    { is18Plus: false },
+    {
+      is18Plus: true,
+      isHide: false
+    }
+  ]
+})
       .sort({ priority: 1, createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const total = await Movie.countDocuments({});
+    const total = await Movie.countDocuments({
+  isPublished: true,
+  $or: [
+    { is18Plus: false },
+    {
+      is18Plus: true,
+      isHide: false
+    }
+  ]
+});
 
  return res.json({
   success: true,
@@ -49,8 +67,16 @@ const getMovieBySlug = async (req, res) => {
   try {
 
     const movie = await Movie.findOne({
-      slug: req.params.slug,
-    }).lean();
+  slug: req.params.slug,
+  isPublished: true,
+  $or: [
+    { is18Plus: false },
+    {
+      is18Plus: true,
+      isHide: false
+    }
+  ]
+}).lean();
 
     if (!movie) {
       return res.status(404).json({
@@ -82,8 +108,16 @@ const getMovieById = async (req, res) => {
   try {
 
     const movie = await Movie.findOne({
-      _id: req.params.id,
-    }).lean();
+  _id: req.params.id,
+  isPublished: true,
+  $or: [
+    { is18Plus: false },
+    {
+      is18Plus: true,
+      isHide: false
+    }
+  ]
+}).lean();
 
     if (!movie) {
       return res.status(404).json({
@@ -115,7 +149,17 @@ const toggleMovieLike = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const movie = await Movie.findById(req.params.id);
+    const movie = await Movie.findOne({
+  _id: req.params.id,
+  isPublished: true,
+  $or: [
+    { is18Plus: false },
+    {
+      is18Plus: true,
+      isHide: false
+    }
+  ]
+});
 
     if (!movie) {
       return res.status(404).json({
@@ -174,7 +218,17 @@ const toggleMovieDislike = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const movie = await Movie.findById(req.params.id);
+    const movie = await Movie.findOne({
+  _id: req.params.id,
+  isPublished: true,
+  $or: [
+    { is18Plus: false },
+    {
+      is18Plus: true,
+      isHide: false
+    }
+  ]
+});
 
     if (!movie) {
       return res.status(404).json({

@@ -7,8 +7,7 @@ const upload = require(
 );
 const validateFileSizes = require("../../middlewares/validateFileSizes");
 const {
-  isAdmin
-} = require("../../middlewares/admin.middleware");
+  isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const {
   addSeries,
@@ -17,7 +16,7 @@ const {
   updateSeries,
   deleteSeries,
   searchSeries,
-
+  bulkToggleHideAdult,
 } = require(
   "../../controllers/admin/series.controller"
 );
@@ -59,44 +58,45 @@ const seriesUpload =
 // ========================================
 // ROUTES (Protected)
 // ========================================
-router.post("/add", isAdmin, seriesUpload, validateFileSizes, addSeries);
-router.patch("/:id", isAdmin, seriesUpload, validateFileSizes, updateSeries);
+router.post("/add", isAdmin, hasPermission("series"), seriesUpload, validateFileSizes, addSeries);
+router.patch("/bulk-hide-adult", isAdmin, hasPermission("series"), bulkToggleHideAdult);
+router.patch("/:id", isAdmin, hasPermission("series"), seriesUpload, validateFileSizes, updateSeries);
 // router.post(
 //   "/add",
-//   isAdmin,
+//   isAdmin, hasPermission("series"),
 //   seriesUpload,
 //   addSeries
 // );
 
 router.get(
   "/",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   getAllSeries
 );
 
 router.get(
   "/search",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   searchSeries
 );
 
 
 router.get(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   getSeriesById
 );
 
 // router.patch(
 //   "/:id",
-//   isAdmin,
+//   isAdmin, hasPermission("series"),
 //   seriesUpload,
 //   updateSeries
 // );
 
 router.delete(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   deleteSeries
 );
 

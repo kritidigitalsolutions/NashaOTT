@@ -57,13 +57,13 @@ const corsOptions = {
 
     // Dynamic pattern matching for development / Vercel preview environments
     const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
-const isNazarVercel =
-  origin.endsWith(".vercel.app") &&
-  origin.includes("nazar-ott-admin-panel");
+    const isNazarVercel =
+      origin.endsWith(".vercel.app") &&
+      origin.includes("nazar-ott-admin-panel");
 
-if (isLocalhost || isNazarVercel) {
-  return callback(null, true);
-}
+    if (isLocalhost || isNazarVercel) {
+      return callback(null, true);
+    }
 
     callback(new Error("Not allowed by CORS"));
   },
@@ -71,168 +71,86 @@ if (isLocalhost || isNazarVercel) {
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"]
 };
+
 app.use(cors(corsOptions));
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
     return res.sendStatus(204);
   }
-
   return next();
 });
 
 app.use(express.json());
-
-app.use(
-  express.urlencoded({
-    extended: true,
-  })
-);
+app.use(express.urlencoded({ extended: true }));
 
 // Serve uploads folder locally
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-
-
-
 
 // ========================================
 // HEALTH CHECK
 // ========================================
 app.get("/", (req, res) => {
-  res.send("Nasha OTT Backend Running 🚀");
+  res.send("Nazar OTT Backend Running 🚀");
 });
-
 
 // ========================================
 // ADMIN ROUTES
 // ========================================
-const adminAuthRoutes = require(
-  "./routes/admin/auth.routes"
-);
-
-const adminUserRoutes = require(
-  "./routes/admin/user.routes"
-);
-
-const movieRoutes = require(
-  "./routes/admin/movie.routes"
-);
-
-const seriesRoutes = require(
-  "./routes/admin/series.routes"
-);
-
-const episodeRoutes = require(
-  "./routes/admin/episode.routes"
-);
-
+const adminAuthRoutes = require("./routes/admin/auth.routes");
+const adminUserRoutes = require("./routes/admin/user.routes");
+const movieRoutes = require("./routes/admin/movie.routes");
+const seriesRoutes = require("./routes/admin/series.routes");
+const episodeRoutes = require("./routes/admin/episode.routes");
+const subAdminRoutes = require("./routes/admin/subAdmin.routes");
+const contentAdminRoutes = require("./routes/admin/content.routes");
 
 const movieUserRoutes = require("./routes/user/movie.routes");
 const seriesUserRoutes = require("./routes/user/series.routes");
-const contentAdminRoutes = require("./routes/admin/content.routes");
 const contentUserRoutes = require("./routes/user/content.routes");
-
-const shortDramaRoutes = require(
-  "./routes/admin/shortdrama.routes"
-);
-
-const dramaEpisodeRoutes = require(
-  "./routes/admin/dramaEpisode.routes"
-);
-const dramaUserRoutes = require(
-  "./routes/user/shortdrama.routes"
-);
-const dramaEpisodeUserRoutes = require(
-  "./routes/user/dramaEpisode.routes"
-);
 
 const updateUpcomingStatus = require("./middlewares/updateUpcomingStatus.middleware");
 
-app.use(
-  "/api/admin/auth",
-  adminAuthRoutes
-);
+app.use("/api/admin/auth", adminAuthRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/admin/user", adminUserRoutes);
+app.use("/api/admin/subadmins", subAdminRoutes);
+app.use("/api/admin/movies", updateUpcomingStatus, movieRoutes);
+app.use("/api/admin/series", updateUpcomingStatus, seriesRoutes);
+app.use("/api/admin/episodes", episodeRoutes);
+app.use("/api/admin/content", updateUpcomingStatus, contentAdminRoutes);
 
-app.use(
-  "/api/admin/users",
-  adminUserRoutes
-);
+const adminCategoryRoutes = require("./routes/admin/category.routes");
+const userCategoryRoutes = require("./routes/user/category.routes");
 
-app.use(
-  "/api/admin/user",
-  adminUserRoutes
-);
+app.use("/api/admin/categories", adminCategoryRoutes);
+app.use("/api/categories", userCategoryRoutes);
 
-app.use(
-  "/api/admin/movies",
-  updateUpcomingStatus,
-  movieRoutes
-);
+// app.use(
+//   "/api/admin/drama-episodes",
+//   dramaEpisodeRoutes
+// );
 
-app.use(
-  "/api/admin/series",
-  updateUpcomingStatus,
-  seriesRoutes
-);
+// app.use(
+//   "/api/shortdramas",
+//   dramaUserRoutes
+// );
 
-app.use(
-  "/api/admin/episodes",
-  episodeRoutes
-);
-
-app.use(
-  "/api/admin/content",
-  updateUpcomingStatus,
-  contentAdminRoutes
-);
-
-
-app.use(
-  "/api/admin/shortdramas",
-  shortDramaRoutes
-);
-
-app.use(
-  "/api/admin/drama-episodes",
-  dramaEpisodeRoutes
-);
-
-app.use(
-  "/api/shortdramas",
-  dramaUserRoutes
-);
-
-app.use(
-  "/api/drama-episodes",
-  dramaEpisodeUserRoutes
-);
+// app.use(
+//   "/api/drama-episodes",
+//   dramaEpisodeUserRoutes
+// );
 
 
 // ========================================
 // USER ROUTES
 // ========================================
-const authRoutes = require(
-  "./routes/user/auth.routes"
-);
+const authRoutes = require("./routes/user/auth.routes");
+const userRoutes = require("./routes/user/user.routes");
 
-const userRoutes = require(
-  "./routes/user/user.routes"
-);
-
-app.use(
-  "/api/auth",
-  authRoutes
-);
-
-app.use(
-  "/api/user",
-  userRoutes
-);
-
+app.use("/api/auth", authRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/movies", updateUpcomingStatus, movieUserRoutes);
-
 app.use("/api/series", updateUpcomingStatus, seriesUserRoutes);
-
 app.use("/api/content", updateUpcomingStatus, contentUserRoutes);
 
 //legal routes for admin
@@ -242,7 +160,6 @@ app.use("/api/admin/legal", adminLegal);
 //legal routes for user
 const userLegal = require("./routes/user/legal.routes");
 app.use("/api/legal", userLegal);
-
 
 //help routes
 const helpAdminRoutes = require("./routes/admin/help.routes");
@@ -261,6 +178,12 @@ const userPlanRoutes = require("./routes/user/plan.routes");
 
 app.use("/api/admin/plan", adminPlanRoutes);
 app.use("/api/plan", userPlanRoutes);
+
+//company routes
+const adminCompanyRoutes = require("./routes/admin/companyInfo.routes");
+const userCompanyRoutes = require("./routes/user/companyInfo.routes");
+app.use("/api/admin/companyInfo", adminCompanyRoutes);
+app.use("/api/companyInfo", userCompanyRoutes);
 
 //promo routes
 const adminPromoRoutes = require("./routes/admin/promo.routes");
@@ -302,23 +225,12 @@ app.use("/api/interaction", interactionRoutes);
 // app.use("/api/payment", paymentRoutes);
 
 // SUPPORT ROUTES
-const userSupportRoutes = require(
-  "./routes/user/support.routes"
-);
+const userSupportRoutes = require("./routes/user/support.routes");
+const adminSupportRoutes = require("./routes/admin/support.routes");
 
-const adminSupportRoutes = require(
-  "./routes/admin/support.routes"
-);
+app.use("/api/support", userSupportRoutes);
+app.use("/api/admin/support", adminSupportRoutes);
 
-app.use(
-  "/api/support",
-  userSupportRoutes
-);
-
-app.use(
-  "/api/admin/support",
-  adminSupportRoutes
-);
 // ========================================
 // EXPORT
 // ========================================

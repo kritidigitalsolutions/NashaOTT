@@ -13,7 +13,8 @@ exports.sendNotification = async (req, res) => {
       type,
       sendTo,
       targetUser,
-      actionUrl
+      actionUrl,
+      imageUrl
     } = req.body;
 
     if (!title || !message) {
@@ -27,6 +28,7 @@ exports.sendNotification = async (req, res) => {
       title,
       message,
       type: type || "GENERAL",
+      imageUrl: imageUrl || null,
       metadata: { actionUrl },
       createdBy: req.user.id,
       sentAt: new Date()
@@ -75,10 +77,13 @@ exports.sendNotification = async (req, res) => {
         token: user.fcmToken,
         title,
         body: message,
+        imageUrl: imageUrl || null,
+        actionUrl: actionUrl || null,
         data: {
           notificationId: notification._id.toString(),
           type: type || "GENERAL",
-          actionUrl: actionUrl || ""
+          actionUrl: actionUrl || "",
+          imageUrl: imageUrl || ""
         }
       });
 

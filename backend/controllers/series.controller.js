@@ -7,7 +7,13 @@ const { getAdultContentWarning } = require("../utils/boolean");
 // ========================================
 const getAllSeries = async (req, res) => {
   try {
-    const series = await Series.find().sort({ priority: 1, createdAt: -1 }).lean();
+    const series = await Series.find({isPublished: true,$or:[
+        { is18Plus:false },
+        {
+            is18Plus:true,
+            isHide:false
+        }
+    ]}).sort({ priority: 1, createdAt: -1 }).lean();
 
     // Fetch all episodes for these series
     const seriesIds = series.map(s => s._id);
@@ -48,8 +54,17 @@ const getAllSeries = async (req, res) => {
 // ========================================
 const getSeriesBySlug = async (req, res) => {
   try {
-    const series = await Series.findOne({ slug: req.params.slug });
-
+    const series = await Series.findOne({
+  slug: req.params.slug,
+  isPublished: true,
+  $or:[
+        { is18Plus:false },
+        {
+            is18Plus:true,
+            isHide:false
+        }
+    ]
+});
     if (!series) {
       return res.status(404).json({
         success: false,
@@ -92,7 +107,17 @@ const getSeriesBySlug = async (req, res) => {
 // ========================================
 const getSeriesById = async (req, res) => {
   try {
-    const series = await Series.findById(req.params.id);
+    const series = await Series.findOne({
+  _id: req.params.id,
+  isPublished: true,
+  $or:[
+        { is18Plus:false },
+        {
+            is18Plus:true,
+            isHide:false
+        }
+    ]
+});
 
     if (!series) {
       return res.status(404).json({
@@ -138,13 +163,38 @@ const getSeriesById = async (req, res) => {
 // ========================================
 const getEpisodesBySeries = async (req, res) => {
   try {
-    const episodes = await Episode.find({ seriesId: req.params.seriesId })
-      .sort({ seasonNumber: 1, episodeNumber: 1 });
+
+    const series = await Series.findOne({
+      _id: req.params.seriesId,
+      isPublished: true,
+      $or:[
+        { is18Plus:false },
+        {
+            is18Plus:true,
+            isHide:false
+        }
+    ]
+    });
+
+    if (!series) {
+      return res.status(404).json({
+        success: false,
+        message: "Series not found",
+      });
+    }
+
+    const episodes = await Episode.find({
+      seriesId: req.params.seriesId,
+    }).sort({
+      seasonNumber: 1,
+      episodeNumber: 1,
+    });
 
     return res.json({
       success: true,
       episodes,
     });
+
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -152,7 +202,6 @@ const getEpisodesBySeries = async (req, res) => {
     });
   }
 };
-
 // ========================================
 // TOGGLE SERIES LIKE
 // ========================================
@@ -162,7 +211,17 @@ const toggleSeriesLike = async (req, res) => {
 
     const userId = req.user.id;
 
-    const series = await Series.findById(req.params.id);
+    const series = await Series.findOne({
+  _id: req.params.id,
+  isPublished: true,
+  $or:[
+        { is18Plus:false },
+        {
+            is18Plus:true,
+            isHide:false
+        }
+    ]
+});
 
     if (!series) {
       return res.status(404).json({
@@ -231,8 +290,17 @@ const toggleSeriesDislike = async (req, res) => {
 
     const userId = req.user.id;
 
-    const series = await Series.findById(req.params.id);
-
+const series = await Series.findOne({
+  _id: req.params.id,
+  isPublished: true,
+  $or:[
+        { is18Plus:false },
+        {
+            is18Plus:true,
+            isHide:false
+        }
+    ]
+});
     if (!series) {
       return res.status(404).json({
         success: false,

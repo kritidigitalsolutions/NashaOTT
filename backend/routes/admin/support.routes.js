@@ -3,8 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  isAdmin,
-} = require("../../middlewares/admin.middleware");
+  isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const upload = require("../../middlewares/upload.middleware");
 
@@ -22,7 +21,7 @@ const {
 // ========================================
 router.get(
   "/",
-  isAdmin,
+  isAdmin, hasPermission("support"),
   getAllTickets
 );
 
@@ -32,7 +31,7 @@ router.get(
 // ========================================
 router.get(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("support"),
   getAdminSingleTicket
 );
 
@@ -42,7 +41,7 @@ router.get(
 // ========================================
 router.post(
   "/reply/:id",
-  isAdmin,
+  isAdmin, hasPermission("support"),
   upload.array("attachments", 5),
   adminReplyTicket
 );
@@ -53,7 +52,7 @@ router.post(
 // ========================================
 router.patch(
   "/status/:id",
-  isAdmin,
+  isAdmin, hasPermission("support"),
   updateTicketStatus
 );
 
@@ -62,7 +61,7 @@ router.patch(
 // ======================================== 
 router.get(
   "/conversation/:id",
-  isAdmin,
+  isAdmin, hasPermission("support"),
   getAdminTicketConversation
 );
 

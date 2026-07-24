@@ -7,8 +7,7 @@ const {
 } = require("../../middlewares/auth.middleware");
 
 const {
-    isAdmin,
-} = require("../../middlewares/admin.middleware");
+    isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const upload = require(
     "../../middlewares/upload.middleware"
@@ -64,35 +63,35 @@ router.patch(
 // Get all users
 router.get(
     "/",
-    isAdmin,
+    isAdmin, hasPermission("users"),
     getAllUsers
 );
 
 // Get user registration stats
 router.get(
     "/registration-stats",
-    isAdmin,
+    isAdmin, hasPermission("users"),
     getRegistrationStats
 );
 
 // Get user growth stats
 router.get(
     "/growth",
-    isAdmin,
+    isAdmin, hasPermission("users"),
     getUserGrowth
 );
 
 // Get single user
 router.get(
     "/:id",
-    isAdmin,
+    isAdmin, hasPermission("users"),
     getSingleUser
 );
 
 // Delete user
 router.delete(
     "/:id",
-    isAdmin,
+    isAdmin, hasPermission("users"),
     deleteUser
 );
 

@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const { isAdmin } = require("../../middlewares/admin.middleware");
+const { isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const {
   sendNotification,

@@ -7,8 +7,7 @@ const upload = require(
 );
 
 const {
-  isAdmin,
-} = require(
+  isAdmin, hasPermission } = require(
   "../../middlewares/admin.middleware"
 );
 
@@ -72,7 +71,7 @@ const dramaUpload =
 // ADD
 router.post(
   "/add",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   dramaUpload,
   addShortDrama
 );
@@ -80,21 +79,21 @@ router.post(
 
 // GET ALL
 router.get(
-  "/",isAdmin,
+  "/",isAdmin, hasPermission("movies"),
   getAllShortDramas
 );
 
 
 // SEARCH
 router.get(
-  "/search",isAdmin,
+  "/search",isAdmin, hasPermission("movies"),
   searchShortDrama
 );
 
 
 // GET SINGLE
 router.get(
-  "/:id",isAdmin,
+  "/:id",isAdmin, hasPermission("movies"),
   getShortDramaById
 );
 
@@ -102,7 +101,7 @@ router.get(
 // UPDATE
 router.patch(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   dramaUpload,
   updateShortDrama
 );
@@ -111,7 +110,7 @@ router.patch(
 // DELETE
 router.delete(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   deleteShortDrama
 );
 

@@ -7,11 +7,11 @@ const {
   getIncomeStats,
   getAllSubscriptions,
 } = require("../../controllers/admin/subscription.controller"); 
-const { isAdmin } = require("../../middlewares/admin.middleware");
+const { isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
-router.get("/revenue", isAdmin, getRevenue);
-router.get("/stats", isAdmin, getSubscriptionStats);
-router.get("/income-stats", isAdmin, getIncomeStats);
-router.get("/all", isAdmin, getAllSubscriptions);
+router.get("/revenue", isAdmin, hasPermission("pricing"), getRevenue);
+router.get("/stats", isAdmin, hasPermission("pricing"), getSubscriptionStats);
+router.get("/income-stats", isAdmin, hasPermission("pricing"), getIncomeStats);
+router.get("/all", isAdmin, hasPermission("pricing"), getAllSubscriptions);
 
 module.exports = router;

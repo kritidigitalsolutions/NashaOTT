@@ -8,11 +8,11 @@ const {
   deleteVoucher
 } = require("../../controllers/admin/voucher.controller");
 
-const { isAdmin } = require("../../middlewares/admin.middleware");
+const { isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
-router.post("/", isAdmin, createVoucher);
-router.get("/", isAdmin, getVouchers);
-router.put("/:id", isAdmin, updateVoucher);
-router.delete("/:id", isAdmin, deleteVoucher);
+router.post("/", isAdmin, hasPermission("promo"), createVoucher);
+router.get("/", isAdmin, hasPermission("promo"), getVouchers);
+router.put("/:id", isAdmin, hasPermission("promo"), updateVoucher);
+router.delete("/:id", isAdmin, hasPermission("promo"), deleteVoucher);
 
 module.exports = router;

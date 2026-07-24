@@ -7,8 +7,7 @@ const upload = require(
 );
 
 const {
-  isAdmin,
-} = require(
+  isAdmin, hasPermission } = require(
   "../../middlewares/admin.middleware"
 );
 
@@ -42,31 +41,31 @@ const dramaEpisodeUpload =
 // ========================================
 // ADD EPISODE
 // ========================================
-router.post("/:shortDramaId/add",isAdmin,dramaEpisodeUpload,addDramaEpisode);
+router.post("/:shortDramaId/add",isAdmin, hasPermission("series"),dramaEpisodeUpload,addDramaEpisode);
 
 // ========================================
 // SEARCH EPISODES
 // ========================================
-router.get("/search",isAdmin,searchDramaEpisodes);
+router.get("/search",isAdmin, hasPermission("series"),searchDramaEpisodes);
 
 
 // ========================================
 // GET ALL EPISODES
 // ========================================
-router.get("/:shortDramaId",isAdmin,getDramaEpisodes);
+router.get("/:shortDramaId",isAdmin, hasPermission("series"),getDramaEpisodes);
 
 
 
 // ========================================
 // UPDATE EPISODE
 // ========================================
-router.patch("/:id",isAdmin,dramaEpisodeUpload,updateDramaEpisode);
+router.patch("/:id",isAdmin, hasPermission("series"),dramaEpisodeUpload,updateDramaEpisode);
 
 
 // ========================================
 // DELETE EPISODE
 // ========================================
-router.delete("/:id",isAdmin,deleteDramaEpisode);
+router.delete("/:id",isAdmin, hasPermission("series"),deleteDramaEpisode);
 
 
 module.exports = router;

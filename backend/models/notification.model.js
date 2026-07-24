@@ -82,7 +82,21 @@ const notificationSchema = new mongoose.Schema(
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Plan"
             },
+            // Content upload notification metadata
+            contentId: {
+                type: mongoose.Schema.Types.ObjectId
+            },
+            contentType: {
+                type: String,
+                enum: ["movie", "series", "shortdrama", null],
+                default: null
+            },
             actionUrl: String
+        },
+
+        imageUrl: {
+            type: String,
+            default: null
         },
 
         // Who created this notification

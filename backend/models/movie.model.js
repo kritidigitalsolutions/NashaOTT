@@ -77,6 +77,15 @@ const movieSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    isHide: {
+    type: Boolean,
+    default: false
+},
+    isPublished: {
+  type: Boolean,
+  default: false,
+  index: true,
+},
 
     rating: {
       type: Number,

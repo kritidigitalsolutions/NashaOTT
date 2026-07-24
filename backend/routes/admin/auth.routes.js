@@ -11,6 +11,11 @@ const {
 } = require("../../cdn/bunnyCDN");
 
 const {
+  uploadVideoToStream,
+  isBunnyStreamConfigured,
+} = require("../../services/bunnyStream.service");
+
+const {
   loginAdmin,
   sendForgotPasswordOtp,
   verifyForgotPasswordOtp,
@@ -76,6 +81,30 @@ const bunnyStorage = {
         return cb(new Error("Invalid Bunny upload target"));
       }
 
+      const isVideo =
+        target.subfolder === "videos" ||
+        target.subfolder === "trailers" ||
+        (file.mimetype && file.mimetype.startsWith("video/"));
+
+      if (isVideo && isBunnyStreamConfigured()) {
+        const title = `${target.type}/${target.subfolder} - ${file.originalname}`;
+        const streamResult = await uploadVideoToStream({
+          title,
+          stream: file.stream,
+          contentType: file.mimetype,
+        });
+
+        return cb(null, {
+          filename: streamResult.guid,
+          path: streamResult.url,
+          cdnUrl: streamResult.url,
+          remotePath: streamResult.guid,
+          embedUrl: streamResult.embedUrl,
+          directUrl: streamResult.directUrl,
+          isBunnyStream: true,
+        });
+      }
+
       const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${safeExtension(file)}`;
 
       const result = await uploadStreamToBunny({
@@ -89,6 +118,7 @@ const bunnyStorage = {
         path: result.url,
         cdnUrl: result.url,
         remotePath: result.path,
+        isBunnyStream: false,
       });
     } catch (err) {
       cb(err);
@@ -164,6 +194,9 @@ const createBunnyUpload = async (req, res) => {
       success: true,
       url: req.file.cdnUrl,
       path: req.file.remotePath,
+      embedUrl: req.file.embedUrl || null,
+      directUrl: req.file.directUrl || null,
+      isBunnyStream: Boolean(req.file.isBunnyStream),
     });
   } catch (err) {
     return res.status(500).json({
@@ -227,7 +260,5 @@ router.post(
   isAdmin,
   changeEmail
 );
-
-
 
 module.exports = router;

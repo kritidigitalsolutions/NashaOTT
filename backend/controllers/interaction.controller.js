@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 const Interaction = require("../models/interaction.model");
 
 // ✅ LIKE / DISLIKE TOGGLE

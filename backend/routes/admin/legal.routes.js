@@ -3,8 +3,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
-  isAdmin
-} = require("../../middlewares/admin.middleware");
+  isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const {
   getLegalDocuments,
@@ -21,28 +20,28 @@ const {
 // Get all legal docs
 router.get(
   "/",
-  isAdmin,
+  isAdmin, hasPermission("legal"),
   getLegalDocuments
 );
 
 // Get legal doc by type
 router.get(
   "/:type",
-  isAdmin,
+  isAdmin, hasPermission("legal"),
   getLegalByType
 );
 
 // Create/update legal doc
 router.put(
   "/:type",
-  isAdmin,
+  isAdmin, hasPermission("legal"),
   addOrUpdateLegalDocument
 );
 
 // Toggle publish status
 router.patch(
   "/:type/toggle",
-  isAdmin,
+  isAdmin, hasPermission("legal"),
   togglePublish
 );
 

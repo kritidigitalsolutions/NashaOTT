@@ -1,8 +1,10 @@
 const multer = require("multer");
 const path = require("path");
+const { uploadStreamToBunny } = require("../cdn/bunnyCDN");
 const {
-  uploadStreamToBunny,
-} = require("../cdn/bunnyCDN");
+  uploadVideoToStream,
+  isBunnyStreamConfigured,
+} = require("../services/bunnyStream.service");
 
 const getUploadInfo = (req, file) => {
   let type = "movies";
@@ -37,21 +39,58 @@ const getUploadInfo = (req, file) => {
   };
 };
 
+const isVideoUpload = (file, uploadInfo) => {
+  return (
+    file.fieldname === "video" ||
+    file.fieldname === "trailer" ||
+    uploadInfo.subfolder === "videos" ||
+    uploadInfo.subfolder === "trailers" ||
+    (file.mimetype && file.mimetype.startsWith("video/"))
+  );
+};
+
 const storage = {
   _handleFile: async (req, file, cb) => {
     try {
       const uploadInfo = getUploadInfo(req, file);
-      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-      const ext = path.extname(file.originalname).toLowerCase();
-
-      const filename = `${uniqueName}${ext}`;
 
       console.log("================================");
       console.log("UPLOAD START");
       console.log("FIELD:", file.fieldname);
       console.log("NAME:", file.originalname);
       console.log("TYPE:", file.mimetype);
-      console.log("REMOTE PATH:", `${uploadInfo.remoteFolder}/${filename}`);
+
+      if (isVideoUpload(file, uploadInfo) && isBunnyStreamConfigured()) {
+        const title = `${req.body.title || file.originalname || "Video"} (${file.fieldname})`;
+        console.log("ROUTING TO BUNNY STREAM:", title);
+
+        const streamResult = await uploadVideoToStream({
+          title,
+          stream: file.stream,
+          contentType: file.mimetype,
+        });
+
+        console.log("BUNNY STREAM RESPONSE:", streamResult);
+        console.log("================================");
+
+        return cb(null, {
+          filename: streamResult.guid,
+          destination: uploadInfo.remoteFolder,
+          path: streamResult.url,
+          cdnUrl: streamResult.url,
+          embedUrl: streamResult.embedUrl,
+          directUrl: streamResult.directUrl,
+          videoId: streamResult.guid,
+          isBunnyStream: true,
+        });
+      }
+
+      // Default: Bunny Storage Zone for images and static assets
+      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const ext = path.extname(file.originalname).toLowerCase();
+      const filename = `${uniqueName}${ext}`;
+
+      console.log("ROUTING TO BUNNY STORAGE ZONE:", `${uploadInfo.remoteFolder}/${filename}`);
 
       const result = await uploadStreamToBunny({
         stream: file.stream,
@@ -59,7 +98,7 @@ const storage = {
         contentType: file.mimetype,
       });
 
-      console.log("BUNNY RESPONSE:", result);
+      console.log("BUNNY STORAGE RESPONSE:", result);
       console.log("================================");
 
       cb(null, {
@@ -68,12 +107,11 @@ const storage = {
         path: result.url,
         cdnUrl: result.url,
         remotePath: result.path,
+        isBunnyStream: false,
       });
     } catch (error) {
-      console.error("BUNNY UPLOAD ERROR");
+      console.error("BUNNY UPLOAD ERROR:", error.message);
       console.error(error);
-      console.error(error.message);
-
       cb(error);
     }
   },
@@ -123,8 +161,6 @@ const fileFilter = (req, file, cb) => {
   cb(new Error("Invalid file type"), false);
 };
 
-// Lazy-evaluated so a missing env var doesn't crash app startup and abort
-// all route registration. The error is thrown at first upload request instead.
 const getMaxUploadSize = () => {
   const size = Number(process.env.MAX_UPLOAD_SIZE);
   if (!size) {
@@ -137,16 +173,8 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: getMaxUploadSize(),  // driven entirely by .env, no hardcoded fallback
+    fileSize: getMaxUploadSize(),
   },
 });
-
-// const upload = multer({
-//   storage,
-//   fileFilter,
-//   limits: {
-//     fileSize: Number(process.env.MAX_UPLOAD_SIZE) || 500 * 1024 * 1024,
-//   },
-// });
 
 module.exports = upload;

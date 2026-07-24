@@ -8,8 +8,7 @@ const upload = require(
 const validateFileSizes = require("../../middlewares/validateFileSizes");
 
 const {
-  isAdmin
-} = require("../../middlewares/admin.middleware");
+  isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const {
   addEpisode,
@@ -42,24 +41,24 @@ const episodeUpload =
 // ========================================
 // ROUTES (Protected)
 // ========================================
-router.post("/add", isAdmin, episodeUpload, validateFileSizes, addEpisode);
-router.patch("/:id", isAdmin, episodeUpload, validateFileSizes, updateEpisode);
+router.post("/add", isAdmin, hasPermission("series"), episodeUpload, validateFileSizes, addEpisode);
+router.patch("/:id", isAdmin, hasPermission("series"), episodeUpload, validateFileSizes, updateEpisode);
 // router.post(
 //   "/add",
-//   isAdmin,
+//   isAdmin, hasPermission("series"),
 //   episodeUpload,
 //   addEpisode
 // );
 
 router.get(
   "/",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   getEpisodes
 );
 
 router.get(
   "/search",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   searchEpisodes
 );
 
@@ -67,20 +66,20 @@ router.get(
 // router.patch(
 //   "/:id",
 
-//   isAdmin,
+//   isAdmin, hasPermission("series"),
 //   episodeUpload,
 //   updateEpisode
 // );
 
 router.delete(
   "/season/:seriesId/:seasonNumber",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   deleteSeason
 );
 
 router.delete(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("series"),
   deleteEpisode
 );
 

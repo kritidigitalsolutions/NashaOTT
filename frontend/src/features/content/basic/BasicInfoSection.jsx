@@ -9,31 +9,37 @@ import {
   Lock,
   ShieldAlert,
   ArrowUpCircle,
+  Eye,
 } from "lucide-react";
+import CategoryPicker from "../../../components/CategoryPicker";
+import "./BasicInfo.css";
 
-export default function BasicInfoSection({
-  form,
-  ch,
-}) {
+/* ── Main Section ──────────────────────────────────────── */
+export default function BasicInfoSection({ form, ch }) {
+  // category is stored as array in form; provide a setter via synthetic event
+  const handleCategoryChange = (slugArray) => {
+    ch({ target: { name: "category", value: slugArray } });
+  };
+
+  // Normalize: may come in as string or array
+  const selectedCats = Array.isArray(form.category)
+    ? form.category
+    : form.category
+    ? [form.category]
+    : [];
+
   return (
     <div className="premium-card">
       <h3 className="section-title">
         <span>
           <Star size={18} />
         </span>
-
         Basic Information
       </h3>
 
-      <div
-        className="form-2col"
-        style={{ marginBottom: 20 }}
-      >
+      <div className="form-2col" style={{ marginBottom: 20 }}>
         <div className="form-row form-full">
-          <label className="form-label">
-            Content Title *
-          </label>
-
+          <label className="form-label">Content Title *</label>
           <input
             className="form-input-styled"
             name="title"
@@ -45,10 +51,7 @@ export default function BasicInfoSection({
         </div>
 
         <div className="form-row form-full">
-          <label className="form-label">
-            Synopsis / Description *
-          </label>
-
+          <label className="form-label">Synopsis / Description *</label>
           <textarea
             className="form-input-styled"
             name="description"
@@ -64,14 +67,9 @@ export default function BasicInfoSection({
       <div className="form-grid-3">
         <div className="form-row">
           <label className="form-label">
-            <Globe
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
+            <Globe size={14} style={{ marginRight: 4 }} />
             Language
           </label>
-
           <input
             className="form-input-styled"
             name="language"
@@ -83,14 +81,9 @@ export default function BasicInfoSection({
 
         <div className="form-row">
           <label className="form-label">
-            <Calendar
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
+            <Calendar size={14} style={{ marginRight: 4 }} />
             Release Year
           </label>
-
           <input
             className="form-input-styled"
             name="releaseYear"
@@ -103,16 +96,9 @@ export default function BasicInfoSection({
 
         <div className="form-row">
           <label className="form-label">
-            <Clock
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
-            {form.type === "movie"
-              ? "Duration"
-              : "Avg. Ep Duration"}
+            <Clock size={14} style={{ marginRight: 4 }} />
+            {form.type === "movie" ? "Duration" : "Avg. Ep Duration"}
           </label>
-
           <input
             className="form-input-styled"
             name="duration"
@@ -124,14 +110,9 @@ export default function BasicInfoSection({
 
         <div className="form-row">
           <label className="form-label">
-            <Tag
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
+            <Tag size={14} style={{ marginRight: 4 }} />
             Genres
           </label>
-
           <input
             className="form-input-styled"
             name="genre"
@@ -141,50 +122,23 @@ export default function BasicInfoSection({
           />
         </div>
 
-        <div className="form-row">
+        {/* ── Dynamic Category Multi-select (full width) ── */}
+        <div className="form-row" style={{ gridColumn: "1 / -1" }}>
           <label className="form-label">
-            <Layers
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
-            Category
+            <Layers size={14} style={{ marginRight: 4 }} />
+            Categories
           </label>
-
-          <select
-            className="form-input-styled"
-            name="category"
-            onChange={ch}
-            value={form.category}
-          >
-            <option value="">
-              Select Category
-            </option>
-
-            <option value="trending">
-              Trending
-            </option>
-
-            <option value="top10">
-              Top 10
-            </option>
-
-            <option value="recommended">
-              Recommended
-            </option>
-          </select>
+          <CategoryPicker
+            selected={selectedCats}
+            onChange={handleCategoryChange}
+          />
         </div>
 
         <div className="form-row">
           <label className="form-label">
-            <Star
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
+            <Star size={14} style={{ marginRight: 4 }} />
             IMDb Rating (0 - 10)
           </label>
-
           <input
             className="form-input-styled"
             name="rating"
@@ -200,14 +154,9 @@ export default function BasicInfoSection({
 
         <div className="form-row">
           <label className="form-label">
-            <ArrowUpCircle
-              size={14}
-              style={{ marginRight: 4 }}
-            />
-
+            <ArrowUpCircle size={14} style={{ marginRight: 4 }} />
             Priority (0 = Auto-assign)
           </label>
-
           <input
             className="form-input-styled"
             name="priority"
@@ -230,10 +179,7 @@ export default function BasicInfoSection({
       >
         <label
           className="checkbox-row"
-          style={{
-            flex: 1,
-            minWidth: "200px",
-          }}
+          style={{ flex: 1, minWidth: "200px" }}
         >
           <input
             type="checkbox"
@@ -241,13 +187,8 @@ export default function BasicInfoSection({
             onChange={ch}
             checked={form.isComingSoon}
           />
-
           <span>
-            <Rocket
-              size={16}
-              style={{ marginRight: 8 }}
-            />
-
+            <Rocket size={16} style={{ marginRight: 8 }} />
             Coming Soon
           </span>
         </label>
@@ -257,10 +198,8 @@ export default function BasicInfoSection({
           style={{
             flex: 1,
             minWidth: "200px",
-            background:
-              "rgba(229, 9, 20, 0.1)",
-            borderColor:
-              "rgba(229, 9, 20, 0.2)",
+            background: "rgba(229, 9, 20, 0.1)",
+            borderColor: "rgba(229, 9, 20, 0.2)",
           }}
         >
           <input
@@ -269,17 +208,8 @@ export default function BasicInfoSection({
             onChange={ch}
             checked={form.isPremium}
           />
-
-          <span
-            style={{
-              color: "var(--primary)",
-            }}
-          >
-            <Lock
-              size={16}
-              style={{ marginRight: 8 }}
-            />
-
+          <span style={{ color: "var(--primary)" }}>
+            <Lock size={16} style={{ marginRight: 8 }} />
             Premium Content
           </span>
         </label>
@@ -289,10 +219,8 @@ export default function BasicInfoSection({
           style={{
             flex: 1,
             minWidth: "200px",
-            background:
-              "rgba(245, 158, 11, 0.12)",
-            borderColor:
-              "rgba(245, 158, 11, 0.25)",
+            background: "rgba(245, 158, 11, 0.12)",
+            borderColor: "rgba(245, 158, 11, 0.25)",
           }}
         >
           <input
@@ -301,18 +229,30 @@ export default function BasicInfoSection({
             onChange={ch}
             checked={form.is18Plus}
           />
-
-          <span
-            style={{
-              color: "var(--orange)",
-            }}
-          >
-            <ShieldAlert
-              size={16}
-              style={{ marginRight: 8 }}
-            />
-
+          <span style={{ color: "var(--orange)" }}>
+            <ShieldAlert size={16} style={{ marginRight: 8 }} />
             18+ Content Warning
+          </span>
+        </label>
+
+        <label
+          className="checkbox-row"
+          style={{
+            flex: 1,
+            minWidth: "200px",
+            background: form.isPublished !== false ? "rgba(6, 214, 160, 0.1)" : "rgba(160, 160, 160, 0.08)",
+            borderColor: form.isPublished !== false ? "rgba(6, 214, 160, 0.25)" : "rgba(160, 160, 160, 0.2)",
+          }}
+        >
+          <input
+            type="checkbox"
+            name="isPublished"
+            onChange={ch}
+            checked={form.isPublished !== false}
+          />
+          <span style={{ color: form.isPublished !== false ? "var(--green)" : "var(--text-muted)" }}>
+            <Eye size={16} style={{ marginRight: 8 }} />
+            {form.isPublished !== false ? "Published" : "Draft (Unpublished)"}
           </span>
         </label>
       </div>
@@ -332,18 +272,12 @@ export default function BasicInfoSection({
       {form.isComingSoon && (
         <div
           className="form-row"
-          style={{
-            marginTop: 20,
-            animation: "pageIn 0.3s ease",
-          }}
+          style={{ marginTop: 20, animation: "pageIn 0.3s ease" }}
         >
-          <label className="form-label">
-            Scheduled Release Date
-          </label>
-
+          <label className="form-label">Scheduled Release Date & Time</label>
           <input
             className="form-input-styled"
-            type="date"
+            type="datetime-local"
             name="releaseDate"
             onChange={ch}
             value={form.releaseDate}

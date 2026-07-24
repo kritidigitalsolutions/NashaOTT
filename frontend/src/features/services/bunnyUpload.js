@@ -144,6 +144,16 @@ export const uploadToBunny = async (
 ) => {
   if (!file) return "";
 
+  const isVideo =
+    subfolder === "videos" ||
+    subfolder === "trailers" ||
+    (file.type && file.type.startsWith("video/"));
+
+  if (isVideo) {
+    // Video/trailer uploads are routed to backend for Bunny Stream library creation & transcoding
+    return uploadThroughBackend(file, type, subfolder, onProgress);
+  }
+
   try {
     return await uploadDirectToBunny(file, type, subfolder, onProgress);
   } catch (err) {

@@ -3,7 +3,8 @@ const router = express.Router();
 
 const {
     addOrUpdateRating,
-    getAllRatings
+    getAllRatings,
+    deleteRating
 } = require("../../controllers/rating.controller");
 
 const { isAuth } = require("../../middlewares/auth.middleware");
@@ -14,5 +15,6 @@ router.post("/rate", isAuth, addOrUpdateRating);
 
 // ✅ ADMIN
 router.get("/all",isAdmin, getAllRatings);
+router.delete("/:id", isAdmin, deleteRating);
 
 module.exports = router;

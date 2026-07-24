@@ -6,8 +6,9 @@ import "./Content.css";
 import {
   Eye, Edit2, Trash2, X, Play, Film, Tv,
   Search, Plus, ChevronRight, ChevronLeft, ChevronDown, User, Calendar, Video,
-  Activity, Upload, ShieldAlert
+  Activity, Upload, ShieldAlert, Layers, Loader2
 } from "lucide-react";
+import CategoryPicker from "../components/CategoryPicker";
 
 /* ===================== PAGINATION COMPONENT ===================== */
 const Pagination = ({ currentPage, totalPages, totalItems, onPageChange }) => {
@@ -84,11 +85,15 @@ export default function Content() {
   };
 
   const [contentType, setContentType] = useState("movies");
+  const [contentAge, setContentAge] = useState("all");
+  const [globalHideMovies, setGlobalHideMovies] = useState(false);
+  const [globalHideSeries, setGlobalHideSeries] = useState(false);
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null); // null = not searching
   const [isSearching, setIsSearching] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -123,7 +128,12 @@ export default function Content() {
   seasonNumber: ""
 });
   const [newEpisodeVideo, setNewEpisodeVideo] = useState(null);
+  const [newEpisodeVideoUrl, setNewEpisodeVideoUrl] = useState("");
+  const [newEpisodeVideoType, setNewEpisodeVideoType] = useState("upload");
   const [newEpisodeThumbnail, setNewEpisodeThumbnail] = useState(null);
+  const [newEpisodeThumbnailUrl, setNewEpisodeThumbnailUrl] = useState("");
+  const [newEpisodeThumbnailType, setNewEpisodeThumbnailType] = useState("upload");
+  const [categories, setCategories] = useState([]);
   const [showAddSeasonForm, setShowAddSeasonForm] = useState(false);
   const [newSeasonNumber, setNewSeasonNumber] = useState("");
   const [addingEpisode, setAddingEpisode] = useState(false);
@@ -158,6 +168,20 @@ export default function Content() {
 
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await API.get("/admin/categories?limit=100");
+        if (res.data && res.data.categories) {
+          setCategories(res.data.categories);
+        }
+      } catch (err) {
+        console.error("Failed to fetch categories", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
     setSearchQuery("");
@@ -165,25 +189,97 @@ export default function Content() {
     return () => {
       controller.abort();
     };
-  }, [contentType, currentPage]);
+  }, [contentType, contentAge, currentPage]);
 
 
   /* ===================== LOCK LOGIC ===================== */
   const isLocked = (item) => {
-    // if (!item.isComingSoon) return false;
     if (!item.releaseDate) return false;
     return new Date(item.releaseDate) > new Date();
   };
 
-  // Coming-soon: view & edit allowed, but video upload locked (trailer OK)
+  const isPublished = (item) => item.isPublished !== false;
+
+  const getContentStatus = (item) => {
+    if (item.isHide) return { label: "Hidden", className: "badge-draft" };
+    if (!isPublished(item)) return { label: "Draft", className: "badge-draft" };
+    if (isLocked(item)) return { label: "Coming Soon", className: "badge-coming" };
+    return { label: "Published", className: "badge-pub" };
+  };
+
+  /* ===================== TOGGLE STATUS ===================== */
+  const handleToggleStatus = async (item) => {
+    if (!item || !item._id) return;
+    const currentIsPublished = isPublished(item);
+    const newIsPublished = !currentIsPublished;
+
+    const updateItem = (list) =>
+      list ? list.map(i => i._id === item._id ? { ...i, isPublished: newIsPublished } : i) : list;
+
+    setData(prev => updateItem(prev));
+    if (searchResults) setSearchResults(prev => updateItem(prev));
+    if (selectedItem && selectedItem._id === item._id) {
+      setSelectedItem(prev => ({ ...prev, isPublished: newIsPublished }));
+    }
+
+    try {
+      const endpoint = contentType === "movies" ? `/admin/movies/${item._id}` : `/admin/series/${item._id}`;
+      const formData = new FormData();
+      formData.append("isPublished", String(newIsPublished));
+
+      await API.patch(endpoint, formData, {
+        headers: { "Content-Type": "multipart/form-data" }
+      });
+    } catch (err) {
+      console.error("Failed to toggle status", err);
+      alert("Failed to toggle status: " + (err.response?.data?.message || err.message));
+      const revertItem = (list) =>
+        list ? list.map(i => i._id === item._id ? { ...i, isPublished: currentIsPublished } : i) : list;
+
+      setData(prev => revertItem(prev));
+      if (searchResults) setSearchResults(prev => revertItem(prev));
+      if (selectedItem && selectedItem._id === item._id) {
+        setSelectedItem(prev => ({ ...prev, isPublished: currentIsPublished }));
+      }
+    }
+  };
+
   const isVideoUploadLocked = (item) => isLocked(item);
+
+  const handleBulkHideAdult = async (checked) => {
+    const confirmed = window.confirm(`Are you sure you want to ${checked ? "hide" : "unhide"} ALL adult ${contentType}?`);
+    if (!confirmed) return;
+    try {
+      const endpoint = contentType === "movies" ? "/admin/movies/bulk-hide-adult" : "/admin/series/bulk-hide-adult";
+      await API.patch(endpoint, { isHide: checked });
+      
+      if (contentType === "movies") {
+        setGlobalHideMovies(checked);
+      } else {
+        setGlobalHideSeries(checked);
+      }
+      
+      alert(`All adult ${contentType} are now ${checked ? "hidden" : "visible"}.`);
+      const controller = new AbortController();
+      fetchData(controller.signal);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update.");
+    }
+  };
 
   /* ===================== DATA FETCH ===================== */
   const fetchData = async (signal) => {
     setLoading(true);
     try {
       const endpoint = contentType === "movies" ? "/admin/movies" : "/admin/series";
-      const res = await API.get(`${endpoint}?page=${currentPage}&limit=10`, { signal });
+      let url = `${endpoint}?page=${currentPage}&limit=10`;
+      if (contentAge === "non-adult") url += "&is18Plus=false";
+      else if (contentAge === "adult") {
+        url += "&is18Plus=true";
+      }
+      
+      const res = await API.get(url, { signal });
 
       const key = contentType === "movies" ? "movies" : "series";
       setData(res.data[key] || []);
@@ -288,19 +384,21 @@ export default function Content() {
       ? { ...newEpisode, seasonNumber: Number(newSeasonNumber) }
       : { ...newEpisode, seasonNumber: Number(seasonNumber) };
 
-    if (!epData.title || !epData.episodeNumber || !epData.seasonNumber) {
-      alert("Title, Episode Number, and Season Number are required");
+    const hasVideo = newEpisodeVideoType === "upload" ? !!newEpisodeVideo : !!newEpisodeVideoUrl;
+
+    if (!epData.title || !epData.episodeNumber || !epData.seasonNumber || !hasVideo) {
+      alert("Title, Episode Number, Season Number, and Video are required");
       return;
     }
     setAddingEpisode(true);
     try {
-      let videoUrl = "";
-      let thumbnailUrl = "";
+      let videoUrl = newEpisodeVideoType === "url" ? newEpisodeVideoUrl : "";
+      let thumbnailUrl = newEpisodeThumbnailType === "url" ? newEpisodeThumbnailUrl : "";
 
-      if (newEpisodeVideo) {
+      if (newEpisodeVideoType === "upload" && newEpisodeVideo) {
         videoUrl = await uploadToBunny(newEpisodeVideo, "episodes", "videos");
       }
-      if (newEpisodeThumbnail) {
+      if (newEpisodeThumbnailType === "upload" && newEpisodeThumbnail) {
         thumbnailUrl = await uploadToBunny(newEpisodeThumbnail, "episodes", "posters");
       }
 
@@ -322,7 +420,9 @@ export default function Content() {
       setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" });
       setNewSeasonNumber("");
       setNewEpisodeVideo(null);
+      setNewEpisodeVideoUrl("");
       setNewEpisodeThumbnail(null);
+      setNewEpisodeThumbnailUrl("");
       fetchEpisodes(selectedSeries._id);
 
     } catch (err) {
@@ -335,6 +435,7 @@ export default function Content() {
   const handleDeleteSeason = async (seasonNumber) => {
     const confirmed = window.confirm(`Delete ALL episodes in Season ${seasonNumber}? This cannot be undone.`);
     if (!confirmed) return;
+    setDeletingId(`season-${seasonNumber}`);
     try {
       await API.delete(`/admin/episodes/season/${selectedSeries._id}/${seasonNumber}`);
 
@@ -342,6 +443,8 @@ export default function Content() {
       fetchEpisodes(selectedSeries._id);
     } catch (err) {
       alert("Failed to delete season: " + (err.response?.data?.message || err.message));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -478,6 +581,7 @@ const textFields = [
   "releaseYear",
   "isPremium",
   "is18Plus",
+  "isHide",
   "isComingSoon",
   "releaseDate",
   "priority"
@@ -591,6 +695,7 @@ const textFields = [
   /* ===================== DELETE ===================== */
   const handleDelete = async (item) => {
     if (!window.confirm(`Delete '${item.title || item.name}' permanently?`)) return;
+    setDeletingId(item._id);
     try {
       if (contentType === "movies") await API.delete(`/admin/movies/${item._id}`);
       else await API.delete(`/admin/series/${item._id}`);
@@ -601,11 +706,14 @@ const textFields = [
       closeModal();
     } catch (err) {
       alert("Delete failed");
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const handleEpisodeDelete = async (ep) => {
     if (!window.confirm(`Delete Ep ${ep.episodeNumber}: ${ep.title}?`)) return;
+    setDeletingId(ep._id);
     try {
       await API.delete(`/admin/episodes/${ep._id}`);
 
@@ -613,6 +721,8 @@ const textFields = [
       fetchEpisodes(selectedSeries._id);
     } catch (err) {
       alert("Delete failed");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -683,35 +793,89 @@ const textFields = [
 
       <div className="content-box">
         {/* Type Selector + Search */}
-        <div className="filter-row" style={{ display: "flex", gap: 12, marginBottom: 32, flexWrap: "wrap", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "20px" }}>
-          <div className="tab-group" style={{ display: "flex", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
-            <button
-              className={`btn ${contentType === "movies" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => { setContentType("movies"); setCurrentPage(1); }}
-              style={{ borderRadius: "8px", boxShadow: contentType === "movies" ? "var(--shadow-sm)" : "none" }}
-            >
-              <Film size={18} /> Movies
-            </button>
-            <button
-              className={`btn ${contentType === "series" ? "btn-primary" : "btn-ghost"}`}
-              onClick={() => { setContentType("series"); setCurrentPage(1); }}
-              style={{ borderRadius: "8px", boxShadow: contentType === "series" ? "var(--shadow-sm)" : "none" }}
-            >
-              <Tv size={18} /> Series
-            </button>
+        <div className="filter-row" style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 32, borderBottom: "1px solid var(--border)", paddingBottom: "20px" }}>
+          {/* Top Row: Type Selector & Search */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+            <div className="tab-group" style={{ display: "flex", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
+              <button
+                className={`btn ${contentType === "movies" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setContentType("movies"); setCurrentPage(1); }}
+                style={{ borderRadius: "8px", boxShadow: contentType === "movies" ? "var(--shadow-sm)" : "none" }}
+              >
+                <Film size={18} /> Movies
+              </button>
+              <button
+                className={`btn ${contentType === "series" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setContentType("series"); setCurrentPage(1); }}
+                style={{ borderRadius: "8px", boxShadow: contentType === "series" ? "var(--shadow-sm)" : "none" }}
+              >
+                <Tv size={18} /> Series
+              </button>
+            </div>
+
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <SearchBar
+                placeholder={`Quick search ${contentType}...`}
+                onSearchChange={(q) => {
+                  setSearchQuery(q);
+                  if (!q.trim()) { setSearchResults(null); return; }
+                  doSearch(q.trim());
+                }}
+                onClear={clearSearch}
+                initialValue={searchQuery}
+              />
+            </div>
           </div>
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 12, alignItems: "center" }}>
-            <SearchBar
-              placeholder={`Quick search ${contentType}...`}
-              onSearchChange={(q) => {
-                setSearchQuery(q);
-                if (!q.trim()) { setSearchResults(null); return; }
-                doSearch(q.trim());
-              }}
-              onClear={clearSearch}
-              initialValue={searchQuery}
-            />
+          {/* Bottom Row: Age Filter */}
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <span style={{ color: "var(--text-muted)", fontSize: "0.95rem", fontWeight: 500 }}>Age Filter:</span>
+            
+            <div className="tab-group" style={{ display: "flex", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
+              <button
+                className={`btn ${contentAge === "all" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setContentAge("all"); setCurrentPage(1); }}
+                style={{ borderRadius: "8px", boxShadow: contentAge === "all" ? "var(--shadow-sm)" : "none" }}
+              >
+                All
+              </button>
+              <button
+                className={`btn ${contentAge === "non-adult" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setContentAge("non-adult"); setCurrentPage(1); }}
+                style={{ borderRadius: "8px", boxShadow: contentAge === "non-adult" ? "var(--shadow-sm)" : "none", color: contentAge === "non-adult" ? "#22c55e" : "inherit" }}
+              >
+                Non-Adult
+              </button>
+              <button
+                className={`btn ${contentAge === "adult" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setContentAge("adult"); setCurrentPage(1); }}
+                style={{ borderRadius: "8px", boxShadow: contentAge === "adult" ? "var(--shadow-sm)" : "none", color: contentAge === "adult" ? "#f59e0b" : "inherit" }}
+              >
+                Adult
+              </button>
+            </div>
+
+            {contentAge === "adult" && (
+              <label style={{ 
+                display: "flex", alignItems: "center", gap: 8, 
+                backgroundColor: "rgba(220, 38, 38, 0.15)",
+                color: "#ef4444",
+                border: "1px solid rgba(220, 38, 38, 0.3)",
+                padding: "6px 16px", 
+                borderRadius: "8px", 
+                fontSize: "0.9rem", 
+                fontWeight: 500,
+                cursor: "pointer"
+              }}>
+                <input 
+                  type="checkbox" 
+                  checked={contentType === "movies" ? globalHideMovies : globalHideSeries} 
+                  onChange={(e) => handleBulkHideAdult(e.target.checked)}
+                  style={{ accentColor: "#ef4444", width: 16, height: 16, cursor: "pointer" }}
+                />
+                <Layers size={16} /> Hide Adult Content
+              </label>
+            )}
           </div>
         </div>
 
@@ -753,21 +917,26 @@ const textFields = [
                               {isLocked(movie) && (
                                 <div style={{ fontSize: "0.75rem", color: "var(--orange)" }}>
                                   <Calendar size={11} style={{ marginRight: 3, verticalAlign: "middle" }} />
-                                  {new Date(movie.releaseDate).toLocaleDateString()}
+                                  {new Date(movie.releaseDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                 </div>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td>{Array.isArray(movie.genre) ? movie.genre.join(", ") : movie.genre}</td>
+                        <td>{Array.isArray(movie.category) ? movie.category.join(", ") : movie.category}</td>
                         <td>{movie.releaseYear}</td>
                         <td>{movie.rating}</td>
                         <td><strong>{movie.priority || 0}</strong></td>
                         <td><span className={`badge ${movie.isPremium ? "badge-active" : "badge-draft"}`}>{movie.isPremium ? "Premium" : "Free"}</span></td>
                         <td><span className={`badge ${movie.is18Plus ? "badge-coming" : "badge-draft"}`}>{movie.is18Plus ? "18+" : "No"}</span></td>
                         <td>
-                          <span className={`badge ${isLocked(movie) ? "badge-coming" : "badge-pub"}`}>
-                            {isLocked(movie) ? "Coming Soon" : "Published"}
+                          <span
+                            className={`badge ${getContentStatus(movie).className}`}
+                            style={{ cursor: "pointer", transition: "transform 0.15s, opacity 0.15s" }}
+                            onClick={() => handleToggleStatus(movie)}
+                            title={`Click to switch status to ${isPublished(movie) ? "Draft" : "Published"}`}
+                          >
+                            {getContentStatus(movie).label}
                           </span>
                         </td>
                         <td>
@@ -779,8 +948,8 @@ const textFields = [
                             <button className="icon-btn edit" onClick={() => openEdit(movie)} title="Edit">
                               <Edit2 size={18} />
                             </button>
-                            <button className="icon-btn del" onClick={() => handleDelete(movie)} title="Delete">
-                              <Trash2 size={18} />
+                            <button className="icon-btn del" onClick={() => handleDelete(movie)} title="Delete" disabled={deletingId === movie._id}>
+                              {deletingId === movie._id ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={18} />}
                             </button>
                           </div>
                         </td>
@@ -828,21 +997,26 @@ const textFields = [
                               {isLocked(series) && (
                                 <div style={{ fontSize: "0.75rem", color: "var(--orange)" }}>
                                   <Calendar size={11} style={{ marginRight: 3, verticalAlign: "middle" }} />
-                                  {new Date(series.releaseDate).toLocaleDateString()}
+                                  {new Date(series.releaseDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                 </div>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td>{Array.isArray(series.genre) ? series.genre.join(", ") : series.genre}</td>
+                        <td>{Array.isArray(series.category) ? series.category.join(", ") : series.category}</td>
                         <td>{series.releaseYear}</td>
                         <td>{series.rating}</td>
                         <td><strong>{series.priority || 0}</strong></td>
                         <td>{series.totalSeasons}</td>
                         <td><span className={`badge ${series.is18Plus ? "badge-coming" : "badge-draft"}`}>{series.is18Plus ? "18+" : "No"}</span></td>
                         <td>
-                          <span className={`badge ${isLocked(series) ? "badge-coming" : "badge-pub"}`}>
-                            {isLocked(series) ? "Coming Soon" : "Published"}
+                          <span
+                            className={`badge ${getContentStatus(series).className}`}
+                            style={{ cursor: "pointer", transition: "transform 0.15s, opacity 0.15s" }}
+                            onClick={() => handleToggleStatus(series)}
+                            title={`Click to switch status to ${isPublished(series) ? "Draft" : "Published"}`}
+                          >
+                            {getContentStatus(series).label}
                           </span>
                         </td>
                         <td>
@@ -853,8 +1027,8 @@ const textFields = [
                             <button className="icon-btn edit" onClick={() => openEdit(series)} title="Edit">
                               <Edit2 size={18} />
                             </button>
-                            <button className="icon-btn del" onClick={() => handleDelete(series)} title="Delete">
-                              <Trash2 size={18} />
+                            <button className="icon-btn del" onClick={() => handleDelete(series)} title="Delete" disabled={deletingId === series._id}>
+                              {deletingId === series._id ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={18} />}
                             </button>
                             <button className="btn btn-ghost eps-btn" onClick={() => handleSeriesClick(series)}>
                               <Tv size={14} /> Seasons
@@ -957,23 +1131,43 @@ const textFields = [
                     <label className="form-label">Duration</label>
                     <input className="form-input" value={newEpisode.duration} onChange={e => setNewEpisode(p => ({ ...p, duration: e.target.value }))} placeholder="e.g. 45m" />
                   </div>
-                  <div className="form-row">
-                    <label className="form-label">Episode Video (optional)</label>
-                    <div className="file-input-wrapper">
-                      <input type="file" accept="video/*" id="new-ep-video-new" className="file-input" onChange={e => setNewEpisodeVideo(e.target.files[0])} />
-                      <label htmlFor="new-ep-video-new" className="file-label">
-                        {newEpisodeVideo ? `✓ ${newEpisodeVideo.name}` : "Choose Video"}
-                      </label>
+                  <div className="form-row" style={{ gridColumn: "span 2" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <label className="form-label" style={{ margin: 0 }}>Episode Video *</label>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button type="button" className={`btn ${newEpisodeVideoType === "upload" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeVideoType("upload"); }}>File</button>
+                        <button type="button" className={`btn ${newEpisodeVideoType === "url" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeVideoType("url"); }}>URL</button>
+                      </div>
                     </div>
+                    {newEpisodeVideoType === "upload" ? (
+                      <div className="file-input-wrapper">
+                        <input type="file" accept="video/*" id="new-ep-video-new" className="file-input" onChange={e => setNewEpisodeVideo(e.target.files[0])} />
+                        <label htmlFor="new-ep-video-new" className="file-label">
+                          {newEpisodeVideo ? `✓ ${newEpisodeVideo.name}` : "Choose Video"}
+                        </label>
+                      </div>
+                    ) : (
+                      <input className="form-input" placeholder="https://..." value={newEpisodeVideoUrl} onChange={e => setNewEpisodeVideoUrl(e.target.value)} />
+                    )}
                   </div>
-                  <div className="form-row">
-                    <label className="form-label">Episode Thumbnail (optional)</label>
-                    <div className="file-input-wrapper">
-                      <input type="file" accept="image/*" id="new-ep-thumb-new" className="file-input" onChange={e => setNewEpisodeThumbnail(e.target.files[0])} />
-                      <label htmlFor="new-ep-thumb-new" className="file-label">
-                        {newEpisodeThumbnail ? `✓ ${newEpisodeThumbnail.name}` : "Choose Thumbnail"}
-                      </label>
+                  <div className="form-row" style={{ gridColumn: "span 2" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <label className="form-label" style={{ margin: 0 }}>Episode Thumbnail (optional)</label>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button type="button" className={`btn ${newEpisodeThumbnailType === "upload" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeThumbnailType("upload"); }}>File</button>
+                        <button type="button" className={`btn ${newEpisodeThumbnailType === "url" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeThumbnailType("url"); }}>URL</button>
+                      </div>
                     </div>
+                    {newEpisodeThumbnailType === "upload" ? (
+                      <div className="file-input-wrapper">
+                        <input type="file" accept="image/*" id="new-ep-thumb-new" className="file-input" onChange={e => setNewEpisodeThumbnail(e.target.files[0])} />
+                        <label htmlFor="new-ep-thumb-new" className="file-label">
+                          {newEpisodeThumbnail ? `✓ ${newEpisodeThumbnail.name}` : "Choose Thumbnail"}
+                        </label>
+                      </div>
+                    ) : (
+                      <input className="form-input" placeholder="https://..." value={newEpisodeThumbnailUrl} onChange={e => setNewEpisodeThumbnailUrl(e.target.value)} />
+                    )}
                   </div>
 
                 </div>
@@ -985,7 +1179,7 @@ const textFields = [
                   <button className="btn btn-primary" onClick={() => handleAddEpisode("new-season")} disabled={addingEpisode}>
                     {addingEpisode ? "Adding…" : <><Plus size={14} /> Add Season &amp; Episode</>}
                   </button>
-                  <button className="btn btn-ghost" onClick={() => { setShowAddSeasonForm(false); setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewSeasonNumber(""); setNewEpisodeVideo(null); setNewEpisodeThumbnail(null); }}>
+                  <button className="btn btn-ghost" onClick={() => { setShowAddSeasonForm(false); setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewSeasonNumber(""); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); }}>
                     Cancel
                   </button>
                 </div>
@@ -1033,8 +1227,9 @@ const textFields = [
                       className="btn btn-ghost del-season-btn"
                       style={{ padding: "5px 10px", fontSize: "0.8rem" }}
                       onClick={() => handleDeleteSeason(seasonNum)}
+                      disabled={deletingId === `season-${seasonNum}`}
                     >
-                      <Trash2 size={14} /> Delete Season
+                      {deletingId === `season-${seasonNum}` ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={14} />} Delete Season
                     </button>
                   </div>
                 </div>
@@ -1056,19 +1251,39 @@ const textFields = [
                         <label className="form-label">Duration</label>
                         <input className="form-input" value={newEpisode.duration} onChange={e => setNewEpisode(p => ({ ...p, duration: e.target.value }))} placeholder="45m" />
                       </div>
-                      <div className="form-row">
-                        <label className="form-label">Video (optional)</label>
-                        <div className="file-input-wrapper">
-                          <input type="file" accept="video/*" id={`ep-video-s${seasonNum}`} className="file-input" onChange={e => setNewEpisodeVideo(e.target.files[0])} />
-                          <label htmlFor={`ep-video-s${seasonNum}`} className="file-label">{newEpisodeVideo ? `✓ ${newEpisodeVideo.name}` : "Choose Video"}</label>
+                      <div className="form-row" style={{ gridColumn: "span 2" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <label className="form-label" style={{ margin: 0 }}>Video *</label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button type="button" className={`btn ${newEpisodeVideoType === "upload" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeVideoType("upload"); }}>File</button>
+                            <button type="button" className={`btn ${newEpisodeVideoType === "url" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeVideoType("url"); }}>URL</button>
+                          </div>
                         </div>
+                        {newEpisodeVideoType === "upload" ? (
+                          <div className="file-input-wrapper">
+                            <input type="file" accept="video/*" id={`ep-video-s${seasonNum}`} className="file-input" onChange={e => setNewEpisodeVideo(e.target.files[0])} />
+                            <label htmlFor={`ep-video-s${seasonNum}`} className="file-label">{newEpisodeVideo ? `✓ ${newEpisodeVideo.name}` : "Choose Video"}</label>
+                          </div>
+                        ) : (
+                          <input className="form-input" placeholder="https://..." value={newEpisodeVideoUrl} onChange={e => setNewEpisodeVideoUrl(e.target.value)} />
+                        )}
                       </div>
-                      <div className="form-row">
-                        <label className="form-label">Thumbnail (optional)</label>
-                        <div className="file-input-wrapper">
-                          <input type="file" accept="image/*" id={`ep-thumb-s${seasonNum}`} className="file-input" onChange={e => setNewEpisodeThumbnail(e.target.files[0])} />
-                          <label htmlFor={`ep-thumb-s${seasonNum}`} className="file-label">{newEpisodeThumbnail ? `✓ ${newEpisodeThumbnail.name}` : "Choose Thumbnail"}</label>
+                      <div className="form-row" style={{ gridColumn: "span 2" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                          <label className="form-label" style={{ margin: 0 }}>Thumbnail (optional)</label>
+                          <div style={{ display: "flex", gap: "6px" }}>
+                            <button type="button" className={`btn ${newEpisodeThumbnailType === "upload" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeThumbnailType("upload"); }}>File</button>
+                            <button type="button" className={`btn ${newEpisodeThumbnailType === "url" ? "btn-primary" : "btn-ghost"}`} style={{ padding: "2px 10px", fontSize: "0.75rem", borderRadius: "12px", minHeight: "24px" }} onClick={(e) => { e.preventDefault(); setNewEpisodeThumbnailType("url"); }}>URL</button>
+                          </div>
                         </div>
+                        {newEpisodeThumbnailType === "upload" ? (
+                          <div className="file-input-wrapper">
+                            <input type="file" accept="image/*" id={`ep-thumb-s${seasonNum}`} className="file-input" onChange={e => setNewEpisodeThumbnail(e.target.files[0])} />
+                            <label htmlFor={`ep-thumb-s${seasonNum}`} className="file-label">{newEpisodeThumbnail ? `✓ ${newEpisodeThumbnail.name}` : "Choose Thumbnail"}</label>
+                          </div>
+                        ) : (
+                          <input className="form-input" placeholder="https://..." value={newEpisodeThumbnailUrl} onChange={e => setNewEpisodeThumbnailUrl(e.target.value)} />
+                        )}
                       </div>
                     </div>
                     <div className="form-row">
@@ -1079,7 +1294,7 @@ const textFields = [
                       <button className="btn btn-primary" onClick={() => handleAddEpisode(seasonNum)} disabled={addingEpisode}>
                         {addingEpisode ? "Adding…" : <><Plus size={14} /> Add Episode</>}
                       </button>
-                      <button className="btn btn-ghost" onClick={() => { setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewEpisodeVideo(null); setNewEpisodeThumbnail(null); }}>
+                      <button className="btn btn-ghost" onClick={() => { setShowAddEpisodeForm(null); setNewEpisode({ title: "", episodeNumber: "", duration: "", description: "", seasonNumber: "" }); setNewEpisodeVideo(null); setNewEpisodeVideoUrl(""); setNewEpisodeThumbnail(null); setNewEpisodeThumbnailUrl(""); }}>
                         Cancel
                       </button>
                     </div>
@@ -1129,8 +1344,8 @@ const textFields = [
                               <button className="icon-btn edit" onClick={() => openEpisodeEdit(ep)} title="Edit Episode">
                                 <Edit2 size={18} />
                               </button>
-                              <button className="icon-btn del" onClick={() => handleEpisodeDelete(ep)} title="Delete">
-                                <Trash2 size={18} />
+                              <button className="icon-btn del" onClick={() => handleEpisodeDelete(ep)} title="Delete" disabled={deletingId === ep._id}>
+                                {deletingId === ep._id ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={18} />}
                               </button>
                             </div>
                           </div>
@@ -1246,7 +1461,7 @@ const textFields = [
                       <Calendar size={18} />
                       <div>
                         <strong>Scheduled Release</strong>
-                        <p>Available from {new Date(selectedItem.releaseDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}</p>
+                        <p>Available from {new Date(selectedItem.releaseDate).toLocaleString("en-IN", { day: "numeric", month: "long", year: "numeric", hour: "numeric", minute: "numeric" })}</p>
                       </div>
                     </div>
                   )}
@@ -1341,7 +1556,7 @@ const textFields = [
                       {selectedItem.releaseDate && (
                         <div className="vp-detail-card">
                           <span className="vp-detail-label">Release Date</span>
-                          <span className="vp-detail-value">{new Date(selectedItem.releaseDate).toLocaleDateString()}</span>
+                          <span className="vp-detail-value">{new Date(selectedItem.releaseDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span>
                         </div>
                       )}
                     </div>
@@ -1466,24 +1681,40 @@ const textFields = [
                       </select>
                     </div>
                     <div className="form-row">
-  <label className="form-label">
-    18+ Content
-  </label>
-
-  <select
-    className="form-input"
-    value={editData.is18Plus ? "yes" : "no"}
-    onChange={(e) =>
-      setEditData((s) => ({
-        ...s,
-        is18Plus: e.target.value === "yes",
-      }))
-    }
-  >
-    <option value="no">No</option>
-    <option value="yes">Yes</option>
-  </select>
-</div>
+                      <label className="form-label">18+ Content</label>
+                      <select
+                        className="form-input"
+                        value={editData.is18Plus ? "yes" : "no"}
+                        onChange={(e) =>
+                          setEditData((s) => ({
+                            ...s,
+                            is18Plus: e.target.value === "yes",
+                            isHide: e.target.value === "yes" ? s.isHide : false
+                          }))
+                        }
+                      >
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                      </select>
+                    </div>
+                    {editData.is18Plus && (
+                      <div className="form-row">
+                        <label className="form-label">Hide Content</label>
+                        <select
+                          className="form-input"
+                          value={editData.isHide ? "yes" : "no"}
+                          onChange={(e) =>
+                            setEditData((s) => ({
+                              ...s,
+                              isHide: e.target.value === "yes",
+                            }))
+                          }
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+                    )}
                     <div className="form-row">
                       <label className="form-label">Coming Soon</label>
                       <select className="form-input" value={editData.isComingSoon ? "yes" : "no"} onChange={e => setEditData(s => ({ ...s, isComingSoon: e.target.value === "yes" }))}>
@@ -1493,12 +1724,12 @@ const textFields = [
                     </div>
                     <div className="form-row">
                       <label className="form-label">Category</label>
-                      <select className="form-input" value={editData.category?.[0] || ""} onChange={e => setEditData(s => ({ ...s, category: e.target.value ? [e.target.value] : [] }))}>
-                        <option value="">None</option>
-                        <option value="trending">Trending</option>
-                        <option value="top10">Top 10</option>
-                        <option value="recommended">Recommended</option>
-                      </select>
+                      <div style={{ marginTop: "4px" }}>
+                        <CategoryPicker
+                          selected={editData.category || []}
+                          onChange={(slugs) => setEditData(s => ({ ...s, category: slugs }))}
+                        />
+                      </div>
                     </div>
                     <div className="form-row">
                       <label className="form-label">Priority (0 = Auto-assign, 1 = top priority)</label>
@@ -1510,21 +1741,19 @@ const textFields = [
                         onChange={e => setEditData(s => ({ ...s, priority: e.target.value === "" ? "" : Number(e.target.value) }))}
                       />
                     </div>
-                    {editData.isComingSoon && (
-                      <div className="form-row">
-                        <label className="form-label">Release Date</label>
-                        <input
-                          className="form-input"
-                          type="date"
-                          value={
-                            editData.releaseDate && !isNaN(Date.parse(editData.releaseDate))
-                              ? new Date(editData.releaseDate).toISOString().split("T")[0]
-                              : ""
-                          }
-                          onChange={e => setEditData(s => ({ ...s, releaseDate: e.target.value }))}
-                        />
-                      </div>
-                    )}
+                    <div className="form-row">
+                      <label className="form-label">Scheduled Release Date & Time</label>
+                      <input
+                        className="form-input"
+                        type="datetime-local"
+                        value={
+                          editData.releaseDate && !isNaN(Date.parse(editData.releaseDate))
+                            ? new Date(editData.releaseDate).toISOString().slice(0, 16)
+                            : ""
+                        }
+                        onChange={e => setEditData(s => ({ ...s, releaseDate: e.target.value }))}
+                      />
+                    </div>
 
                   </div>
 

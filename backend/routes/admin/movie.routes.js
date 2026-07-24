@@ -9,8 +9,7 @@ const upload = require(
 const validateFileSizes = require("../../middlewares/validateFileSizes");
 
 const {
-  isAdmin
-} = require("../../middlewares/admin.middleware");
+  isAdmin, hasPermission } = require("../../middlewares/admin.middleware");
 
 const {
   addMovie,
@@ -19,6 +18,7 @@ const {
   updateMovie,
   deleteMovie,
   searchMovies,
+  bulkToggleHideAdult,
 } = require(
   "../../controllers/admin/movie.controller"
 );
@@ -72,44 +72,45 @@ const movieUpload = upload.fields([
 // ========================================
 // ROUTES (Protected)
 // ========================================
-router.post("/add", isAdmin, movieUpload, validateFileSizes, addMovie);
-router.patch("/:id", isAdmin, movieUpload, validateFileSizes, updateMovie);
+router.post("/add", isAdmin, hasPermission("movies"), movieUpload, validateFileSizes, addMovie);
+router.patch("/bulk-hide-adult", isAdmin, hasPermission("movies"), bulkToggleHideAdult);
+router.patch("/:id", isAdmin, hasPermission("movies"), movieUpload, validateFileSizes, updateMovie);
 // router.post(
 //   "/add",
-//   isAdmin,
+//   isAdmin, hasPermission("movies"),
 //   movieUpload,
 //   addMovie
 // );
 
 router.get(
   "/",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   getAllMovies
 );
 
 router.get(
   "/search",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   searchMovies
 );
 
 
 router.get(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   getMovieById
 );
 
 // router.patch(
 //   "/:id",
-//   isAdmin,
+//   isAdmin, hasPermission("movies"),
 //   movieUpload,
 //   updateMovie
 // );
 
 router.delete(
   "/:id",
-  isAdmin,
+  isAdmin, hasPermission("movies"),
   deleteMovie
 );
 

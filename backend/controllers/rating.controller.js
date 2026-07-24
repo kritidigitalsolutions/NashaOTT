@@ -72,3 +72,18 @@ exports.getAllRatings = async (req, res) => {
         });
     }
 };
+
+// ⭐ DELETE RATING (ADMIN)
+exports.deleteRating = async (req, res) => {
+    try {
+        const ratingId = req.params.id;
+        const deleted = await Rating.findByIdAndDelete(ratingId);
+        if (!deleted) {
+            return res.status(404).json({ success: false, message: "Rating not found" });
+        }
+        res.json({ success: true, message: "Rating deleted successfully" });
+    } catch (error) {
+        console.error("Delete Rating Error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
