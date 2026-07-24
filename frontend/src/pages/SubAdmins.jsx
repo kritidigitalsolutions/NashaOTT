@@ -16,7 +16,6 @@ import {
   EyeOff,
   CheckCircle2,
   AlertCircle,
-  Loader2,
 } from "lucide-react";
 import "./SubAdmins.css";
 
@@ -83,7 +82,6 @@ export default function SubAdmins() {
   const [moduleSearch, setModuleSearch] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     if (adminRole === "ADMIN") {
@@ -332,7 +330,6 @@ export default function SubAdmins() {
     if (!window.confirm(`Are you sure you want to delete staff account '${staff.name}'? This cannot be undone.`)) {
       return;
     }
-    setDeletingId(staff._id);
     try {
       const res = await API.delete(`/admin/subadmins/${staff._id}`);
       if (res.data?.success) {
@@ -341,8 +338,6 @@ export default function SubAdmins() {
       }
     } catch (err) {
       showToast(err.response?.data?.message || "Failed to delete account", "error");
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -568,9 +563,8 @@ export default function SubAdmins() {
                               className="btn-action delete"
                               title="Delete Staff Account"
                               onClick={() => handleDeleteStaff(staff)}
-                              disabled={deletingId === staff._id}
                             >
-                              {deletingId === staff._id ? <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={16} />}
+                              <Trash2 size={16} />
                             </button>
                           )}
                         </div>
@@ -750,7 +744,7 @@ export default function SubAdmins() {
                               return (
                                 <tr key={mod.id} className="module-row">
                                   <td style={{ fontWeight: 600, color: "#f8fafc" }}>{mod.title}</td>
-                                  
+
                                   {/* VIEW Column */}
                                   <td className="text-center">
                                     {mod.availableActions.includes("view") ? (
@@ -844,8 +838,8 @@ export default function SubAdmins() {
                   {submitting
                     ? "Saving..."
                     : editingStaff
-                    ? "Save Changes"
-                    : "Create Sub Admin"}
+                      ? "Save Changes"
+                      : "Create Sub Admin"}
                 </button>
               </div>
             </form>

@@ -757,8 +757,8 @@ body.light .form-input {
 
 /* Prevent Chrome Autofill from turning inputs white/yellow and hiding the eye icon */
 .login-input:-webkit-autofill,
-.login-input:-webkit-autofill:hover, 
-.login-input:-webkit-autofill:focus, 
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus,
 .login-input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #0e1320 inset !important;
   -webkit-text-fill-color: #ffffff !important;
@@ -1187,7 +1187,7 @@ textarea.form-input-styled {
   align-items: flex-start;
 }
 
-.media-section-title > div {
+.media-section-title>div {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1614,19 +1614,39 @@ body.light .checkbox-row:has(input[name="isPremium"]) span {
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalScaleUp {
-  from { transform: scale(0.85); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 @keyframes iconPop {
-  0% { transform: scale(0.5); }
-  70% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.5);
+  }
+
+  70% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* ========================================================
@@ -1695,5 +1715,3 @@ body.light .checkbox-row:has(input[name="isPremium"]) span {
     transform: rotate(360deg);
   }
 }
-
-

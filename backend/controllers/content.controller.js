@@ -223,7 +223,56 @@ const series = await Series.find(
   }
 };
 
+// ========================================
+// GET SINGLE CONTENT
+// ========================================
+const getSingleContent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ success: false, message: "Content ID is required" });
+
+    // Try finding in Movie first
+    let content = await Movie.findOne({ _id: id, ...movieFilter }).lean();
+    if (content) {
+      content.type = "movie";
+      content.isTrending = content.category?.includes("trending") || false;
+      return res.json({ success: true, content });
+    }
+
+    // Try finding in Series
+    content = await Series.findOne({ _id: id, ...seriesFilter }).lean();
+    if (content) {
+      content.type = "series";
+      content.isTrending = content.category?.includes("trending") || false;
+
+      // Fetch episodes for this series
+      const episodes = await Episode.find({ seriesId: content._id }).sort({ seasonNumber: 1, episodeNumber: 1 }).lean();
+      
+      const seasons = [];
+      episodes.forEach(ep => {
+        let season = seasons.find(se => se.seasonNumber === ep.seasonNumber);
+        if (!season) {
+          season = { seasonNumber: ep.seasonNumber, episodes: [] };
+          seasons.push(season);
+        }
+        season.episodes.push(ep);
+      });
+      
+      content.seasons = seasons;
+      return res.json({ success: true, content });
+    }
+
+    return res.status(404).json({ success: false, message: "Content not found" });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({ success: false, message: "Content not found" });
+    }
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   getHomeContent,
-  searchContent
+  searchContent,
+  getSingleContent
 };

@@ -6,7 +6,7 @@ import "./Content.css";
 import {
   Eye, Edit2, Trash2, X, Play, Film, Tv,
   Search, Plus, ChevronRight, ChevronLeft, ChevronDown, User, Calendar, Video,
-  Activity, Upload, ShieldAlert, Layers, Loader2
+  Activity, Upload, ShieldAlert, Layers
 } from "lucide-react";
 import CategoryPicker from "../components/CategoryPicker";
 
@@ -93,7 +93,6 @@ export default function Content() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null); // null = not searching
   const [isSearching, setIsSearching] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -121,12 +120,12 @@ export default function Content() {
   // Add season/episode forms
   const [showAddEpisodeForm, setShowAddEpisodeForm] = useState(null); // seasonNumber
   const [newEpisode, setNewEpisode] = useState({
-  title: "",
-  episodeNumber: "",
-  duration: "",
-  description: "",
-  seasonNumber: ""
-});
+    title: "",
+    episodeNumber: "",
+    duration: "",
+    description: "",
+    seasonNumber: ""
+  });
   const [newEpisodeVideo, setNewEpisodeVideo] = useState(null);
   const [newEpisodeVideoUrl, setNewEpisodeVideoUrl] = useState("");
   const [newEpisodeVideoType, setNewEpisodeVideoType] = useState("upload");
@@ -252,13 +251,13 @@ export default function Content() {
     try {
       const endpoint = contentType === "movies" ? "/admin/movies/bulk-hide-adult" : "/admin/series/bulk-hide-adult";
       await API.patch(endpoint, { isHide: checked });
-      
+
       if (contentType === "movies") {
         setGlobalHideMovies(checked);
       } else {
         setGlobalHideSeries(checked);
       }
-      
+
       alert(`All adult ${contentType} are now ${checked ? "hidden" : "visible"}.`);
       const controller = new AbortController();
       fetchData(controller.signal);
@@ -278,7 +277,7 @@ export default function Content() {
       else if (contentAge === "adult") {
         url += "&is18Plus=true";
       }
-      
+
       const res = await API.get(url, { signal });
 
       const key = contentType === "movies" ? "movies" : "series";
@@ -435,7 +434,6 @@ export default function Content() {
   const handleDeleteSeason = async (seasonNumber) => {
     const confirmed = window.confirm(`Delete ALL episodes in Season ${seasonNumber}? This cannot be undone.`);
     if (!confirmed) return;
-    setDeletingId(`season-${seasonNumber}`);
     try {
       await API.delete(`/admin/episodes/season/${selectedSeries._id}/${seasonNumber}`);
 
@@ -443,8 +441,6 @@ export default function Content() {
       fetchEpisodes(selectedSeries._id);
     } catch (err) {
       alert("Failed to delete season: " + (err.response?.data?.message || err.message));
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -554,13 +550,13 @@ export default function Content() {
       // 4. Direct upload trailer
       let trailerUrl = uploadData.trailerUrl || "";
       if (uploadData.trailer) {
-  trailerUrl = await uploadToBunny(
-    uploadData.trailer,
-    typeFolder,
-    "trailers",
-    (percent) => setUploadProgress(percent)   // ✅ add this
-  );
-}
+        trailerUrl = await uploadToBunny(
+          uploadData.trailer,
+          typeFolder,
+          "trailers",
+          (percent) => setUploadProgress(percent)   // ✅ add this
+        );
+      }
 
       // 5. Direct upload video (movies only)
       let videoUrl = uploadData.videoUrl || "";
@@ -572,20 +568,20 @@ export default function Content() {
 
       const formData = new FormData();
       // Basic text fields
-const textFields = [
-  "title",
-  "description",
-  "language",
-  "duration",
-  "rating",
-  "releaseYear",
-  "isPremium",
-  "is18Plus",
-  "isHide",
-  "isComingSoon",
-  "releaseDate",
-  "priority"
-];
+      const textFields = [
+        "title",
+        "description",
+        "language",
+        "duration",
+        "rating",
+        "releaseYear",
+        "isPremium",
+        "is18Plus",
+        "isHide",
+        "isComingSoon",
+        "releaseDate",
+        "priority"
+      ];
       textFields.forEach(k => {
         const value = editData[k];
 
@@ -695,7 +691,6 @@ const textFields = [
   /* ===================== DELETE ===================== */
   const handleDelete = async (item) => {
     if (!window.confirm(`Delete '${item.title || item.name}' permanently?`)) return;
-    setDeletingId(item._id);
     try {
       if (contentType === "movies") await API.delete(`/admin/movies/${item._id}`);
       else await API.delete(`/admin/series/${item._id}`);
@@ -706,14 +701,11 @@ const textFields = [
       closeModal();
     } catch (err) {
       alert("Delete failed");
-    } finally {
-      setDeletingId(null);
     }
   };
 
   const handleEpisodeDelete = async (ep) => {
     if (!window.confirm(`Delete Ep ${ep.episodeNumber}: ${ep.title}?`)) return;
-    setDeletingId(ep._id);
     try {
       await API.delete(`/admin/episodes/${ep._id}`);
 
@@ -721,8 +713,6 @@ const textFields = [
       fetchEpisodes(selectedSeries._id);
     } catch (err) {
       alert("Delete failed");
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -830,7 +820,7 @@ const textFields = [
           {/* Bottom Row: Age Filter */}
           <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
             <span style={{ color: "var(--text-muted)", fontSize: "0.95rem", fontWeight: 500 }}>Age Filter:</span>
-            
+
             <div className="tab-group" style={{ display: "flex", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
               <button
                 className={`btn ${contentAge === "all" ? "btn-primary" : "btn-ghost"}`}
@@ -856,20 +846,20 @@ const textFields = [
             </div>
 
             {contentAge === "adult" && (
-              <label style={{ 
-                display: "flex", alignItems: "center", gap: 8, 
+              <label style={{
+                display: "flex", alignItems: "center", gap: 8,
                 backgroundColor: "rgba(220, 38, 38, 0.15)",
                 color: "#ef4444",
                 border: "1px solid rgba(220, 38, 38, 0.3)",
-                padding: "6px 16px", 
-                borderRadius: "8px", 
-                fontSize: "0.9rem", 
+                padding: "6px 16px",
+                borderRadius: "8px",
+                fontSize: "0.9rem",
                 fontWeight: 500,
                 cursor: "pointer"
               }}>
-                <input 
-                  type="checkbox" 
-                  checked={contentType === "movies" ? globalHideMovies : globalHideSeries} 
+                <input
+                  type="checkbox"
+                  checked={contentType === "movies" ? globalHideMovies : globalHideSeries}
                   onChange={(e) => handleBulkHideAdult(e.target.checked)}
                   style={{ accentColor: "#ef4444", width: 16, height: 16, cursor: "pointer" }}
                 />
@@ -948,8 +938,8 @@ const textFields = [
                             <button className="icon-btn edit" onClick={() => openEdit(movie)} title="Edit">
                               <Edit2 size={18} />
                             </button>
-                            <button className="icon-btn del" onClick={() => handleDelete(movie)} title="Delete" disabled={deletingId === movie._id}>
-                              {deletingId === movie._id ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={18} />}
+                            <button className="icon-btn del" onClick={() => handleDelete(movie)} title="Delete">
+                              <Trash2 size={18} />
                             </button>
                           </div>
                         </td>
@@ -1027,8 +1017,8 @@ const textFields = [
                             <button className="icon-btn edit" onClick={() => openEdit(series)} title="Edit">
                               <Edit2 size={18} />
                             </button>
-                            <button className="icon-btn del" onClick={() => handleDelete(series)} title="Delete" disabled={deletingId === series._id}>
-                              {deletingId === series._id ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={18} />}
+                            <button className="icon-btn del" onClick={() => handleDelete(series)} title="Delete">
+                              <Trash2 size={18} />
                             </button>
                             <button className="btn btn-ghost eps-btn" onClick={() => handleSeriesClick(series)}>
                               <Tv size={14} /> Seasons
@@ -1227,9 +1217,8 @@ const textFields = [
                       className="btn btn-ghost del-season-btn"
                       style={{ padding: "5px 10px", fontSize: "0.8rem" }}
                       onClick={() => handleDeleteSeason(seasonNum)}
-                      disabled={deletingId === `season-${seasonNum}`}
                     >
-                      {deletingId === `season-${seasonNum}` ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={14} />} Delete Season
+                      <Trash2 size={14} /> Delete Season
                     </button>
                   </div>
                 </div>
@@ -1344,8 +1333,8 @@ const textFields = [
                               <button className="icon-btn edit" onClick={() => openEpisodeEdit(ep)} title="Edit Episode">
                                 <Edit2 size={18} />
                               </button>
-                              <button className="icon-btn del" onClick={() => handleEpisodeDelete(ep)} title="Delete" disabled={deletingId === ep._id}>
-                                {deletingId === ep._id ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <Trash2 size={18} />}
+                              <button className="icon-btn del" onClick={() => handleEpisodeDelete(ep)} title="Delete">
+                                <Trash2 size={18} />
                               </button>
                             </div>
                           </div>
