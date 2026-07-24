@@ -91,10 +91,11 @@ export default function Dashboard() {
         API.get("/admin/user/registration-stats"),
       ]);
 
-      setContentStats(sRes.data.data || []);
-
-
-
+      const rawContentStats = sRes.data || {};
+      setContentStats([
+        { name: "Movies", value: rawContentStats.movieCount || 0 },
+        { name: "Series", value: rawContentStats.seriesCount || 0 }
+      ]);
       setGrowthData(gRes.data.data || []);
 
       setSubscriptionStats(subStatsRes.data?.data || {
@@ -142,6 +143,10 @@ export default function Dashboard() {
 
   const activeUsers = Array.isArray(users) ? users.filter(u => !u.isBlocked).length : 0;
 
+  const usersThisWeek = Array.isArray(users) ? users.filter(u => new Date(u.createdAt) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length : 0;
+  const prevUsers = (Array.isArray(users) ? users.length : 0) - usersThisWeek;
+  const userGrowthPercent = prevUsers > 0 ? Math.round((usersThisWeek / prevUsers) * 100) : (usersThisWeek > 0 ? 100 : 0);
+
   return (
     <div className="page-section">
       {/* Header */}
@@ -161,7 +166,7 @@ export default function Dashboard() {
           <div className="stat-icon"><Users size={32} /></div>
           <div className="stat-label">Total Users</div>
           <div className="stat-value">{loading ? "..." : (Array.isArray(users) ? users.length : 0)}</div>
-          <div className="stat-trend up">↑ +12% this week</div>
+          <div className="stat-trend up">↑ +{userGrowthPercent}% this week</div>
         </div>
         <div className="stat-card s-blue">
           <div className="stat-icon"><Film size={32} /></div>
@@ -170,7 +175,7 @@ export default function Dashboard() {
           <div className="stat-value">
             {loading ? "..." : totalContent}
           </div>
-          <div className="stat-trend up">↑ +8% this week</div>
+          <div className="stat-trend up">{moviesCount} Movies, {seriesCount} Series</div>
         </div>
         <div className="stat-card s-green">
           <div className="stat-icon"><Radio size={32} /></div>
