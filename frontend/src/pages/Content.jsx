@@ -4,9 +4,9 @@ import { uploadToBunny } from "../features/services/bunnyUpload";
 
 import "./Content.css";
 import {
-  Eye, Edit2, Trash2, X, Play, Film, Tv,
+  Eye, EyeOff, Globe, Edit2, Trash2, X, Play, Film, Tv,
   Search, Plus, ChevronRight, ChevronLeft, ChevronDown, User, Calendar, Video,
-  Activity, Upload, ShieldAlert, Layers
+  Activity, Upload, ShieldAlert, Layers, ToggleLeft, ToggleRight
 } from "lucide-react";
 import CategoryPicker from "../components/CategoryPicker";
 
@@ -941,6 +941,14 @@ export default function Content() {
                             <button className="icon-btn del" onClick={() => handleDelete(movie)} title="Delete">
                               <Trash2 size={18} />
                             </button>
+                            <button 
+                              className="icon-btn" 
+                              style={{ color: isPublished(movie) ? "#22c55e" : "var(--text-muted)" }}
+                              onClick={() => handleToggleStatus(movie)} 
+                              title={isPublished(movie) ? "Move to Draft" : "Publish"}
+                            >
+                              {isPublished(movie) ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -1019,6 +1027,14 @@ export default function Content() {
                             </button>
                             <button className="icon-btn del" onClick={() => handleDelete(series)} title="Delete">
                               <Trash2 size={18} />
+                            </button>
+                            <button 
+                              className="icon-btn" 
+                              style={{ color: isPublished(series) ? "#22c55e" : "var(--text-muted)" }}
+                              onClick={() => handleToggleStatus(series)} 
+                              title={isPublished(series) ? "Move to Draft" : "Publish"}
+                            >
+                              {isPublished(series) ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                             </button>
                             <button className="btn btn-ghost eps-btn" onClick={() => handleSeriesClick(series)}>
                               <Tv size={14} /> Seasons
