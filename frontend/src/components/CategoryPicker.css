@@ -1,142 +1,53 @@
-/* ── CategoryPicker shared component ── */
+/* ── CategoryPicker Chips Selection ── */
 
-.cp-wrapper {
-  position: relative;
+.category-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 0;
   width: 100%;
 }
 
-.cp-trigger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
-  background: rgba(255, 255, 255, 0.03);
+.category-chip-btn {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 9px 22px;
+  border-radius: 9999px;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  min-height: 42px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
-}
-
-.cp-trigger:hover,
-.cp-trigger.open {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-}
-
-.cp-chips {
-  flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  min-height: 22px;
-  align-items: center;
-}
-
-.cp-placeholder {
-  color: rgba(160, 160, 160, 0.5);
-  font-size: 0.85rem;
-}
-
-.cp-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  color: var(--primary);
-  border-radius: 6px;
-  padding: 2px 8px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  line-height: 1.4;
-  animation: cpChipIn 0.15s ease;
+  justify-content: center;
 }
 
-@keyframes cpChipIn {
-  from { opacity: 0; transform: scale(0.88); }
-  to   { opacity: 1; transform: scale(1); }
+.category-chip-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 175, 55, 0.35); /* Subtle gold border on hover */
+  color: rgba(255, 255, 255, 0.95);
 }
 
-.cp-chip-remove {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: rgba(212, 175, 55, 0.55);
-  display: flex;
-  align-items: center;
-  padding: 0;
-  transition: color 0.15s;
+.category-chip-btn.active {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.05) 100%);
+  border-color: var(--primary); /* Gold border */
+  color: var(--primary); /* Gold text */
+  box-shadow: 0 0 16px rgba(212, 175, 55, 0.15);
+  transform: translateY(-1px);
 }
 
-.cp-chip-remove:hover { color: #e63946; }
+.category-chip-btn.active:hover {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22) 0%, rgba(212, 175, 55, 0.08) 100%);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.22);
+}
 
-.cp-arrow {
+.category-chips-empty {
+  font-size: 0.85rem;
   color: var(--text-muted);
-  flex-shrink: 0;
-  transition: transform 0.2s;
-}
-
-.cp-arrow.rotated { transform: rotate(180deg); }
-
-.cp-dropdown {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 0;
-  right: 0;
-  background: #111;
-  border: 1px solid rgba(212, 175, 55, 0.22);
-  border-radius: 12px;
-  overflow: hidden;
-  z-index: 500;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
-  animation: cpDropIn 0.15s ease;
-  max-height: 240px;
-  overflow-y: auto;
-}
-
-@keyframes cpDropIn {
-  from { opacity: 0; transform: translateY(-5px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.cp-dropdown::-webkit-scrollbar { width: 4px; }
-.cp-dropdown::-webkit-scrollbar-thumb {
-  background: rgba(212, 175, 55, 0.2);
-  border-radius: 4px;
-}
-
-.cp-option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 15px;
-  font-size: 0.855rem;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.cp-option:last-child { border-bottom: none; }
-
-.cp-option:hover {
-  background: rgba(212, 175, 55, 0.06);
-  color: var(--text);
-}
-
-.cp-option.selected {
-  background: rgba(212, 175, 55, 0.08);
-  color: var(--primary);
-  font-weight: 600;
-}
-
-.cp-check { color: var(--primary); }
-
-.cp-empty {
-  padding: 18px;
-  text-align: center;
-  color: var(--text-muted);
-  font-size: 0.82rem;
+  padding: 10px 0;
 }

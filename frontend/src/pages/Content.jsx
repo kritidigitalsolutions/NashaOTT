@@ -1728,7 +1728,7 @@ export default function Content() {
                       </select>
                     </div>
                     <div className="form-row">
-                      <label className="form-label">Category</label>
+                      <label className="form-label" style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>Selected Categories (Select Multiple)</label>
                       <div style={{ marginTop: "4px" }}>
                         <CategoryPicker
                           selected={editData.category || []}

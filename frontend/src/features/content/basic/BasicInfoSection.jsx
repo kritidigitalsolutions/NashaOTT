@@ -124,9 +124,9 @@ export default function BasicInfoSection({ form, ch }) {
 
         {/* ── Dynamic Category Multi-select (full width) ── */}
         <div className="form-row" style={{ gridColumn: "1 / -1" }}>
-          <label className="form-label">
-            <Layers size={14} style={{ marginRight: 4 }} />
-            Categories
+          <label className="form-label" style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <Layers size={14} style={{ marginRight: 6 }} />
+            Selected Categories (Select Multiple)
           </label>
           <CategoryPicker
             selected={selectedCats}
