@@ -26,7 +26,7 @@ body,
 body {
   font-family: 'Plus Jakarta Sans', 'Manrope', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
-  
+
   /* Obsidian Dark Theme */
   --bg: #050505;
   --bg2: #0a0a0a;
@@ -37,7 +37,7 @@ body {
   --text: #ffffff;
   --text-muted: #a0a0a0;
   --text-soft: #e5e5e5;
-  
+
   /* NAZAR OTT Gold Colors */
   --primary: #d4af37;
   --primary-hover: #f4d03f;
@@ -45,7 +45,7 @@ body {
   --primary-dim: rgba(212, 175, 55, 0.12);
   --primary-dim-hover: rgba(212, 175, 55, 0.22);
   --gold-glow: 0 0 20px rgba(212, 175, 55, 0.2);
-  
+
   /* Secondary Palette */
   --blue: #3a86ff;
   --blue-dim: rgba(58, 134, 255, 0.12);
@@ -57,7 +57,7 @@ body {
   --purple-dim: rgba(131, 56, 236, 0.12);
   --red-danger: #e63946;
   --red-danger-dim: rgba(230, 57, 70, 0.12);
-  
+
   /* Glassmorphism */
   --glass: rgba(10, 10, 10, 0.75);
   --blur: blur(20px);
@@ -65,7 +65,7 @@ body {
   --radius-sm: 10px;
   --shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 175, 55, 0.05);
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.6);
-  
+
   background: var(--bg);
   color: var(--text);
   transition: background 0.4s ease, color 0.4s ease;
@@ -215,8 +215,15 @@ button {
 }
 
 @keyframes toastIn {
-  from { transform: translateX(100%) scale(0.9); opacity: 0; }
-  to { transform: translateX(0) scale(1); opacity: 1; }
+  from {
+    transform: translateX(100%) scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+  }
 }
 
 .toast-content {
@@ -237,8 +244,15 @@ button {
   flex-shrink: 0;
 }
 
-.global-toast.success .toast-icon { background: var(--green-dim); color: var(--green); }
-.global-toast.error .toast-icon { background: var(--red-danger-dim); color: var(--red-danger); }
+.global-toast.success .toast-icon {
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.global-toast.error .toast-icon {
+  background: var(--red-danger-dim);
+  color: var(--red-danger);
+}
 
 .toast-message {
   font-size: 0.95rem;
@@ -256,12 +270,22 @@ button {
   animation: toastProgress 3.5s linear forwards;
 }
 
-.global-toast.success .toast-progress { background: var(--green); }
-.global-toast.error .toast-progress { background: var(--red-danger); }
+.global-toast.success .toast-progress {
+  background: var(--green);
+}
+
+.global-toast.error .toast-progress {
+  background: var(--red-danger);
+}
 
 @keyframes toastProgress {
-  from { transform: scaleX(1); }
-  to { transform: scaleX(0); }
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* ---- General Glassmorphism Templates ---- */
@@ -287,12 +311,29 @@ button {
 }
 
 /* ---- Utility Classes ---- */
-.text-success { color: var(--green) !important; }
-.text-warning { color: var(--orange) !important; }
-.text-danger { color: var(--red-danger) !important; }
-.text-info { color: var(--blue) !important; }
-.text-gold { color: var(--primary) !important; }
-.mono { font-family: 'Courier New', Courier, monospace; }
+.text-success {
+  color: var(--green) !important;
+}
+
+.text-warning {
+  color: var(--orange) !important;
+}
+
+.text-danger {
+  color: var(--red-danger) !important;
+}
+
+.text-info {
+  color: var(--blue) !important;
+}
+
+.text-gold {
+  color: var(--primary) !important;
+}
+
+.mono {
+  font-family: 'Courier New', Courier, monospace;
+}
 
 /* Glowing indicators */
 .gold-glow {

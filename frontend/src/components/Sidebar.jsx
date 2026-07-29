@@ -2,7 +2,7 @@ import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 import Logo from "./Logo";
 // import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
-import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Layers, Building2,ShieldCheck } from "lucide-react";
+import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Layers, Building2, ShieldCheck } from "lucide-react";
 //new things
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#d4af37" },
@@ -54,7 +54,7 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
         {NAV.filter(item => {
           if (item.requiresSuperAdmin && adminRole !== "ADMIN") return false;
           if (adminRole === "ADMIN") return true;
-          
+
           const adminPermissions = (() => {
             try { return JSON.parse(localStorage.getItem("adminPermissions") || "[]"); }
             catch { return []; }
@@ -79,8 +79,8 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
           };
 
           const requiredModules = Array.isArray(map[item.id]) ? map[item.id] : [map[item.id]];
-          
-          return requiredModules.some(mod => 
+
+          return requiredModules.some(mod =>
             adminPermissions.some(perm => perm === mod || perm.startsWith(`${mod}.`))
           );
         }).map((item) => {
