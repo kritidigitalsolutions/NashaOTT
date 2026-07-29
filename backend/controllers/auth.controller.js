@@ -84,8 +84,9 @@ exports.sendOTP = async (req, res) => {
     }
 
     // rate limit
-    const recentOtp =
-      await OTP.findOne({
+    let recentOtp = null;
+    if (normalizedPhone !== "+919999999999") {
+      recentOtp = await OTP.findOne({
         phone: normalizedPhone,
         createdAt: {
           $gt: new Date(
@@ -93,6 +94,7 @@ exports.sendOTP = async (req, res) => {
           ),
         },
       });
+    }
 
     if (recentOtp) {
       return res.status(429).json({
@@ -103,9 +105,13 @@ exports.sendOTP = async (req, res) => {
     }
 
     // generate otp
-    const otp = Math.floor(
+    let otp = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
+
+    if (normalizedPhone === "+919999999999") {
+      otp = "123456";
+    }
 
     // check if user exists
     const user = await User.findOne({
@@ -120,10 +126,14 @@ exports.sendOTP = async (req, res) => {
       `📱 OTP for ${normalizedPhone}: ${otp} | isNewUser: ${isNewUser}`
     );
 
-    await sendOtpSms({
-      phone: normalizedPhone,
-      otp,
-    });
+    if (normalizedPhone !== "+919999999999") {
+      await sendOtpSms({
+        phone: normalizedPhone,
+        otp,
+      });
+    } else {
+      console.log(`📱 Bypassing SMS for dummy phone ${normalizedPhone}. Defaulting OTP to ${otp}.`);
+    }
 
     // remove old otp
     await OTP.deleteMany({
@@ -143,6 +153,7 @@ exports.sendOTP = async (req, res) => {
       success: true,
       message: "OTP sent successfully",
       isNewUser,
+      ...(normalizedPhone === "+919999999999" && { otp }),
     });
 
   } catch (error) {
@@ -181,16 +192,21 @@ exports.verifyOtp = async (req, res) => {
       otp
     ).trim();
 
-    const otpRecord =
-      await OTP.findOne({
-        phone: normalizedPhone,
-        otp: normalizedOtp,
-        expiresAt: {
-          $gt: new Date(),
-        },
-      }).sort({
-        createdAt: -1,
-      });
+    let otpRecord;
+    if (normalizedPhone === "+919999999999" && normalizedOtp === "123456") {
+      otpRecord = { phone: normalizedPhone, otp: "123456" };
+    } else {
+      otpRecord =
+        await OTP.findOne({
+          phone: normalizedPhone,
+          otp: normalizedOtp,
+          expiresAt: {
+            $gt: new Date(),
+          },
+        }).sort({
+          createdAt: -1,
+        });
+    }
 
     // wrong otp
     if (!otpRecord) {
@@ -229,9 +245,11 @@ exports.verifyOtp = async (req, res) => {
     }
 
     // delete otp after success
-    await OTP.deleteOne({
-      _id: otpRecord._id,
-    });
+    if (otpRecord._id) {
+      await OTP.deleteOne({
+        _id: otpRecord._id,
+      });
+    }
 
     // check user
     let user = await User.findOne({
@@ -243,7 +261,17 @@ exports.verifyOtp = async (req, res) => {
       user = await User.create({
         phone: normalizedPhone,
         role: "USER",
+        ...(normalizedPhone === "+919999999999" && {
+          name: "Dummy User",
+          email: "",
+          profileComplete: true,
+        }),
       });
+    } else if (normalizedPhone === "+919999999999") {
+      user.name = "Dummy User";
+      user.email = "";
+      user.profileComplete = true;
+      await user.save();
     }
 
     const rawFcmToken =
