@@ -2,7 +2,7 @@ const Series = require("../../models/series.model");
 const Episode = require("../../models/episode.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
 const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
-const { sendContentUploadNotification } = require("../../utils/notificationHelper");
+
 
 // ========================================
 // HELPERS
@@ -128,12 +128,6 @@ const addSeries = async (req, res) => {
       priority,
     });
 
-    // Fire-and-forget: notify all users about the new series
-    sendContentUploadNotification({
-      content: series,
-      contentType: "series",
-      createdBy: req.user.id,
-    });
 
     return res.status(201).json({
       success: true,

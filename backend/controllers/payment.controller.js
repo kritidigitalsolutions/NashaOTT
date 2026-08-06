@@ -1,448 +1,230 @@
-const crypto = require("crypto");
+const crypto = require('crypto');
+const { sabpaisaClient, generateChecksum, SABPAISA_MERCHANT_ID } = require('../config/sabpaisa');
+const Plan = require('../models/plan.model');
+const Promo = require('../models/promocode.model');
+const Subscription = require('../models/subscription.model');
+const User = require('../models/user.model');
+const PaymentTransaction = require('../models/paymentTransaction.model');
+const { expireSubscriptionIfNeeded } = require('../utils/subscription.helper');
 
-const razorpay = require("../config/razorpay");
+const successfulStatuses = new Set(['SUCCESS', 'SUCCEEDED', 'PAID', 'COMPLETED', 'CAPTURED']);
+const failedStatuses = new Set(['FAILED', 'FAILURE', 'CANCELLED', 'CANCELED', 'EXPIRED']);
+const getValue = (source, ...keys) => keys.map((key) => source?.[key]).find((value) => value !== undefined && value !== null && value !== '');
+const paymentLog = (step, details = {}) => console.log(`[PAYMENT] ${new Date().toISOString()} ${step}`, details);
 
-const Plan = require("../models/plan.model");
-const Promo = require("../models/promocode.model");
-const Subscription = require("../models/subscription.model");
+// Safe when SabPaisa retries a webhook or the browser checks the same payment twice.
+const activateSubscription = async (transaction, gatewayPayload = {}) => {
+  paymentLog('SUBSCRIPTION_ACTIVATION_STARTED', { merchantTxnId: transaction.merchantTxnId, paymentId: transaction.paymentId, userId: transaction.user.toString() });
+  const existing = await Subscription.findOne({ paymentId: transaction.paymentId });
+  if (existing) {
+    transaction.status = 'paid';
+    transaction.subscription = existing._id;
+    transaction.gatewayPayload = gatewayPayload;
+    await transaction.save();
+    paymentLog('SUBSCRIPTION_ALREADY_ACTIVE', { merchantTxnId: transaction.merchantTxnId, subscriptionId: existing._id.toString() });
+    return existing;
+  }
 
-const {
-  expireSubscriptionIfNeeded,
-} = require("../utils/subscription.helper");
+  let active = await Subscription.findOne({ user: transaction.user, status: 'active' });
+  active = await expireSubscriptionIfNeeded(active);
+  if (active?.status === 'active') throw new Error('User already has an active subscription');
 
+  const plan = await Plan.findById(transaction.plan);
+  if (!plan) throw new Error('Plan no longer exists');
 
-// =====================================================
-// CREATE ORDER
-// =====================================================
-exports.createOrder = async (
-  req,
-  res
-) => {
+  const startDate = new Date();
+  const endDate = new Date(startDate);
+  endDate.setUTCDate(endDate.getUTCDate() + plan.duration);
+  const subscription = await Subscription.create({
+    user: transaction.user,
+    plan: plan._id,
+    status: 'active',
+    paymentId: transaction.paymentId,
+    subscriptionId: transaction.merchantTxnId,
+    amount: transaction.amount,
+    currency: transaction.currency,
+    startDate,
+    endDate,
+  });
+
+  if (transaction.promoCode) {
+    await Promo.updateOne({ code: transaction.promoCode, isActive: true }, { $inc: { usedCount: 1 } });
+  }
+  transaction.status = 'paid';
+  transaction.subscription = subscription._id;
+  transaction.gatewayPayload = gatewayPayload;
+  await transaction.save();
+  paymentLog('SUBSCRIPTION_ACTIVATED', { merchantTxnId: transaction.merchantTxnId, subscriptionId: subscription._id.toString(), planId: plan._id.toString(), endDate: endDate.toISOString() });
+  return subscription;
+};
+
+const createOrder = async (req, res) => {
   try {
+    const { planId, promoCode } = req.body;
+    paymentLog('CREATE_REQUEST_RECEIVED', { userId: req.user.id, planId, hasPromoCode: Boolean(promoCode) });
+    if (!planId) return res.status(400).json({ success: false, message: 'planId required' });
 
-    const {
-      planId,
-      promoCode,
-    } = req.body;
-
-    if (!planId) {
-      return res.status(400).json({
-        success: false,
-        message: "planId required",
-      });
-    }
-
-    const plan =
-      await Plan.findById(planId);
-
-    if (
-      !plan ||
-      !plan.isActive
-    ) {
-      return res.status(404).json({
-        success: false,
-        message: "Plan not found",
-      });
-    }
+    const [plan, user] = await Promise.all([Plan.findById(planId), User.findById(req.user.id)]);
+    if (!plan || !plan.isActive) return res.status(404).json({ success: false, message: 'Plan not found' });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
     let finalAmount = plan.price;
-
     let appliedPromo = null;
-
-    // ========================================
-    // APPLY PROMO
-    // ========================================
-
     if (promoCode) {
-
-      const promo =
-        await Promo.findOne({
-          code:
-            promoCode.toUpperCase(),
-          isActive: true,
-        });
-
-      if (!promo) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid promo code",
-        });
+      const promo = await Promo.findOne({ code: promoCode.toUpperCase(), isActive: true });
+      if (!promo || (promo.expiryDate && promo.expiryDate < new Date()) || promo.usedCount >= promo.maxUses) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired promo code' });
       }
-
-      // promo expired
-      if (
-        promo.expiryDate &&
-        promo.expiryDate <
-          new Date()
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "Promo expired",
-        });
+      if (promo.applicablePlans?.length && !promo.applicablePlans.some((id) => id.toString() === planId)) {
+        return res.status(400).json({ success: false, message: 'Promo not valid for this plan' });
       }
-
-      // promo limit
-      if (
-        promo.usedCount >=
-        promo.maxUses
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Promo limit reached",
-        });
-      }
-
-      // applicable plans
-      if (
-        promo.applicablePlans
-          .length &&
-        !promo.applicablePlans.some(
-          (id) =>
-            id.toString() ===
-            planId
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Promo not valid for this plan",
-        });
-      }
-
-      let discount = 0;
-
-      if (
-        promo.discountType ===
-        "percentage"
-      ) {
-
-        discount =
-          (
-            plan.price *
-            promo.discountValue
-          ) / 100;
-
-      } else {
-
-        discount =
-          promo.discountValue;
-      }
-
-      finalAmount = Math.max(
-        plan.price - discount,
-        0
-      );
-
+      const discount = promo.discountType === 'percentage' ? (plan.price * promo.discountValue) / 100 : promo.discountValue;
+      finalAmount = Math.max(plan.price - discount, 0);
       appliedPromo = promo.code;
     }
 
-    // ========================================
-    // RAZORPAY CONFIG
-    // ========================================
+    const merchantTxnId = `txn_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const amountPaise = Math.round(finalAmount * 100);
+    const timestamp = Math.floor(Date.now() / 1000);
+    const backendUrl = process.env.BACKEND_URL?.replace(/\/$/, '');
+    if (!process.env.SABPAISA_RETURN_URL && !backendUrl) throw new Error('Set BACKEND_URL or SABPAISA_RETURN_URL');
+    if (!process.env.SABPAISA_WEBHOOK_URL && !backendUrl) throw new Error('Set BACKEND_URL or SABPAISA_WEBHOOK_URL');
 
-    if (!razorpay) {
-      return res.status(503).json({
-        success: false,
-        message:
-          "Payment gateway not configured",
-      });
+    let webhookUrl = process.env.SABPAISA_WEBHOOK_URL || `${backendUrl}/api/payment/webhook`;
+    if (/localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\./i.test(webhookUrl)) {
+      webhookUrl = 'https://nazarott.com/api/payment/webhook';
     }
 
-    // ========================================
-    // CREATE ORDER
-    // ========================================
+    const payload = {
+      merchantId: SABPAISA_MERCHANT_ID,
+      merchantTxnId,
+      amount: amountPaise,
+      currency: 'INR',
+      timestamp,
+      checksum: generateChecksum(merchantTxnId, amountPaise, 'INR', timestamp),
+      customerName: user.name || 'User',
+      customerEmail: user.email || 'noreply@mirchiott.com',
+      customerPhone: user.phone || '9999999999',
+      returnUrl: process.env.SABPAISA_RETURN_URL || `${backendUrl}/api/payment/return`,
+      webhookUrl,
+      notes: { planId, userId: req.user.id, promoCode: appliedPromo || '' },
+    };
+    paymentLog('SABPAISA_CREATE_REQUEST', { merchantTxnId, planId, amount: finalAmount, amountPaise, returnUrl: payload.returnUrl, webhookUrl: payload.webhookUrl });
+    const { data } = await sabpaisaClient.post('/api/v2/payments', payload);
+    paymentLog('SABPAISA_CREATE_RESPONSE', { merchantTxnId, paymentId: data?.paymentId, status: data?.status, success: data?.success, hasCheckoutUrl: Boolean(data?.checkoutUrl) });
+    if (!data?.checkoutUrl || !data?.paymentId) throw new Error('SabPaisa did not return checkoutUrl or paymentId');
 
-    const order =
-      await razorpay.orders.create({
-        amount:
-          finalAmount * 100,
-        currency: "INR",
-        receipt:
-          "rcpt_" + Date.now(),
-
-        notes: {
-          planId,
-          userId: req.user.id,
-          promoCode:
-            appliedPromo || "",
-        },
-      });
-
-    res.status(200).json({
-      success: true,
-      key:
-        process.env
-          .RAZORPAY_KEY_ID,
-      order,
-      finalAmount,
+    await PaymentTransaction.create({
+      merchantTxnId,
+      paymentId: data.paymentId,
+      user: req.user.id,
+      plan: plan._id,
+      promoCode: appliedPromo,
+      amount: finalAmount,
+      currency: 'INR',
     });
-
+    paymentLog('TRANSACTION_SAVED', { merchantTxnId, paymentId: data.paymentId, userId: req.user.id, planId, amount: finalAmount });
+    const checkoutUrl = data.clientSecret ? `${data.checkoutUrl}?clientSecret=${encodeURIComponent(data.clientSecret)}` : data.checkoutUrl;
+    return res.status(200).json({ success: true, checkoutUrl, paymentId: data.paymentId, merchantTxnId, amount: finalAmount });
   } catch (err) {
-
-    console.error(
-      "Create Order Error:",
-      err
-    );
-
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    paymentLog('CREATE_FAILED', { message: err.message, gatewayError: err.response?.data });
+    console.error('Create Order Error:', err.response?.data || err.message);
+    return res.status(500).json({ success: false, message: err.message, error: err.response?.data });
   }
 };
 
-
-// =====================================================
-// VERIFY PAYMENT
-// =====================================================
-exports.verifyPayment = async (
-  req,
-  res
-) => {
+// Browser may use this after redirect. It never grants access by trusting a browser-supplied status.
+const verifyPayment = async (req, res) => {
   try {
-
-    const {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      planId,
-    } = req.body;
-
-    // ========================================
-    // VALIDATION
-    // ========================================
-
-    if (
-      !razorpay_order_id ||
-      !razorpay_payment_id ||
-      !razorpay_signature ||
-      !planId
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Missing required payment fields",
-      });
+    const { merchantTxnId } = req.body;
+    paymentLog('VERIFY_REQUEST_RECEIVED', { merchantTxnId, userId: req.user.id });
+    if (!merchantTxnId) return res.status(400).json({ success: false, message: 'merchantTxnId required' });
+    const transaction = await PaymentTransaction.findOne({ merchantTxnId, user: req.user.id }).populate('subscription');
+    if (!transaction) {
+      paymentLog('VERIFY_NOT_FOUND', { merchantTxnId, userId: req.user.id });
+      return res.status(404).json({ success: false, message: 'Payment transaction not found' });
     }
-
-    // ========================================
-    // VERIFY SIGNATURE
-    // ========================================
-
-    const body =
-      razorpay_order_id +
-      "|" +
-      razorpay_payment_id;
-
-    const expectedSignature =
-      crypto
-        .createHmac(
-          "sha256",
-          process.env
-            .RAZORPAY_KEY_SECRET
-        )
-        .update(body)
-        .digest("hex");
-
-    if (
-      expectedSignature !==
-      razorpay_signature
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Payment verification failed",
-      });
+    if (transaction.status !== 'paid') {
+      paymentLog('VERIFY_PENDING', { merchantTxnId, transactionStatus: transaction.status });
+      return res.status(202).json({ success: false, message: 'Payment is awaiting SabPaisa confirmation' });
     }
-
-    const userId = req.user.id;
-
-    // ========================================
-    // PREVENT DUPLICATE PAYMENT
-    // ========================================
-
-    const alreadyPaid =
-      await Subscription.findOne({
-        paymentId:
-          razorpay_payment_id,
-      });
-
-    if (alreadyPaid) {
-      return res.status(200).json({
-        success: true,
-        message:
-          "Payment already processed",
-        subscription:
-          alreadyPaid,
-      });
-    }
-
-    // ========================================
-    // CHECK EXISTING SUBSCRIPTION
-    // ========================================
-
-    let existing =
-      await Subscription.findOne({
-        user: userId,
-        status: "active",
-      });
-
-    existing =
-      await expireSubscriptionIfNeeded(
-        existing
-      );
-
-    if (
-      existing &&
-      existing.status ===
-        "active"
-    ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "You already have an active subscription",
-      });
-    }
-
-    // ========================================
-    // GET PLAN
-    // ========================================
-
-    const plan =
-      await Plan.findById(planId);
-
-    if (!plan) {
-      return res.status(404).json({
-        success: false,
-        message: "Plan not found",
-      });
-    }
-
-    // ========================================
-    // RAZORPAY CHECK
-    // ========================================
-
-    if (!razorpay) {
-      return res.status(503).json({
-        success: false,
-        message:
-          "Payment gateway not configured",
-      });
-    }
-
-    // ========================================
-    // FETCH ORDER DETAILS
-    // ========================================
-
-    const orderDetails =
-      await razorpay.orders.fetch(
-        razorpay_order_id
-      );
-
-    let finalAmount =
-      plan.price;
-
-    const appliedCode =
-      orderDetails.notes
-        ?.promoCode || "";
-
-    // ========================================
-    // APPLY PROMO
-    // ========================================
-
-    if (appliedCode) {
-
-      const promo =
-        await Promo.findOne({
-          code:
-            appliedCode.toUpperCase(),
-          isActive: true,
-        });
-
-      if (promo) {
-
-        let discount = 0;
-
-        if (
-          promo.discountType ===
-          "percentage"
-        ) {
-
-          discount =
-            (
-              plan.price *
-              promo.discountValue
-            ) / 100;
-
-        } else {
-
-          discount =
-            promo.discountValue;
-        }
-
-        finalAmount = Math.max(
-          plan.price - discount,
-          0
-        );
-
-        promo.usedCount += 1;
-
-        await promo.save();
-      }
-    }
-
-    // ========================================
-    // CREATE SUBSCRIPTION
-    // ========================================
-
-    const startDate =
-      new Date();
-
-    const endDate =
-      new Date();
-
-    endDate.setUTCDate(
-      endDate.getUTCDate() +
-        plan.duration
-    );
-
-    const subscription =
-      await Subscription.create({
-        user: userId,
-        plan: plan._id,
-        status: "active",
-
-        paymentId:
-          razorpay_payment_id,
-
-        subscriptionId:
-          razorpay_order_id,
-
-        amount: finalAmount,
-
-        startDate,
-        endDate,
-      });
-
-    res.status(200).json({
-      success: true,
-      message:
-        "Payment verified",
-      subscription,
-    });
-
+    paymentLog('VERIFY_SUCCESS', { merchantTxnId, subscriptionId: transaction.subscription?._id?.toString() || transaction.subscription?.toString() });
+    return res.json({ success: true, message: 'Payment verified', subscription: transaction.subscription });
   } catch (err) {
-
-    console.error(
-      "Verify Payment Error:",
-      err
-    );
-
-    res.status(500).json({
-      success: false,
-      message: err.message,
-    });
+    paymentLog('VERIFY_FAILED', { message: err.message });
+    console.error('Verify Payment Error:', err);
+    return res.status(500).json({ success: false, message: err.message });
   }
+};
+
+const sabPaisaWebhook = async (req, res) => {
+  try {
+    const signatureHeader = req.headers['x-sabpaisa-signature'];
+    paymentLog('WEBHOOK_RECEIVED', { hasSignature: Boolean(signatureHeader), contentLength: req.headers['content-length'], body: req.body });
+    if (!signatureHeader) {
+      paymentLog('WEBHOOK_REJECTED', { reason: 'Missing signature' });
+      return res.status(400).send('Missing signature');
+    }
+    const [timestamp, receivedSignature] = signatureHeader.split('.');
+    // SabPaisa sends its webhook timestamp in milliseconds, not seconds.
+    if (!timestamp || !receivedSignature || Math.abs(Date.now() - Number(timestamp)) > 300000) {
+      paymentLog('WEBHOOK_REJECTED', { reason: 'Invalid or expired signature timestamp' });
+      return res.status(400).send('Invalid or expired signature timestamp');
+    }
+    const expectedSignature = crypto.createHmac('sha256', process.env.SABPAISA_WEBHOOK_SECRET)
+      .update(`${timestamp}.`).update(req.rawBody || Buffer.from(JSON.stringify(req.body))).digest('base64');
+    const expected = Buffer.from(expectedSignature);
+    const received = Buffer.from(receivedSignature);
+    if (expected.length !== received.length || !crypto.timingSafeEqual(expected, received)) {
+      paymentLog('WEBHOOK_REJECTED', { reason: 'Invalid signature' });
+      return res.status(400).send('Invalid signature');
+    }
+
+    const merchantTxnId = getValue(req.body, 'merchantTxnId', 'merchant_txn_id', 'merchantTransactionId');
+    const paymentId = getValue(req.body, 'paymentId', 'payment_id');
+    const status = getValue(req.body, 'status', 'payment_status', 'event');
+    if (!merchantTxnId) return res.status(400).send('Missing merchant transaction ID');
+    paymentLog('WEBHOOK_SIGNATURE_VALID', { merchantTxnId, paymentId, status });
+    const transaction = await PaymentTransaction.findOne({ merchantTxnId });
+    if (!transaction) {
+      paymentLog('WEBHOOK_REJECTED', { merchantTxnId, reason: 'Unknown payment transaction' });
+      return res.status(404).send('Unknown payment transaction');
+    }
+    if (paymentId && paymentId !== transaction.paymentId) {
+      paymentLog('WEBHOOK_REJECTED', { merchantTxnId, reason: 'Payment ID mismatch', paymentId });
+      return res.status(400).send('Payment ID mismatch');
+    }
+
+    const normalizedStatus = String(status || '').toUpperCase().replace(/[.\- ]/g, '_');
+    if (successfulStatuses.has(normalizedStatus) || normalizedStatus.endsWith('_SUCCESS') || normalizedStatus.endsWith('_SUCCEEDED')) {
+      const subscription = await activateSubscription(transaction, req.body);
+      return res.status(200).json({ status: 'processed', subscriptionId: subscription._id });
+    }
+    // A gateway can send informational events before the final result. Keep
+    // those payments pending; only a final failure may move them to failed.
+    if (failedStatuses.has(normalizedStatus) || normalizedStatus.endsWith('_FAILED')) transaction.status = 'failed';
+    transaction.gatewayPayload = req.body;
+    await transaction.save();
+    paymentLog('WEBHOOK_NON_FINAL_EVENT_SAVED', { merchantTxnId, gatewayStatus: status, transactionStatus: transaction.status });
+    return res.status(200).json({ status: 'received' });
+  } catch (error) {
+    paymentLog('WEBHOOK_FAILED', { message: error.message });
+    console.error('Webhook Error:', error.message);
+    return res.status(500).send('Webhook error');
+  }
+};
+
+const sabPaisaReturn = (req, res) => {
+  const merchantTxnId = req.query.merchantTxnId || req.query.merchant_txn_id || '';
+  const status = req.query.status || '';
+  const frontendUrl = (process.env.FRONTEND_URL || 'https://mirchiott.com').split(',')[0].replace(/\/$/, '');
+  paymentLog('RETURN_URL_RECEIVED', { merchantTxnId, status, query: req.query, redirectTo: `${frontendUrl}/payment-result` });
+  return res.redirect(`${frontendUrl}/payment-result?txnId=${encodeURIComponent(merchantTxnId)}&status=${encodeURIComponent(status)}`);
+};
+
+module.exports = {
+  createOrder,
+  verifyPayment,
+  sabPaisaWebhook,
+  sabPaisaReturn,
 };

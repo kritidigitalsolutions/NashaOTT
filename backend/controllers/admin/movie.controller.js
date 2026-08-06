@@ -1,7 +1,7 @@
 const Movie = require("../../models/movie.model");
 const { getMediaUrl, deleteMedia, deleteMediaFiles } = require("../../utils/mediaUrl");
 const { parseBoolean, getAdultContentWarning } = require("../../utils/boolean");
-const { sendContentUploadNotification } = require("../../utils/notificationHelper");
+
 
 // ========================================
 // HELPERS
@@ -190,12 +190,6 @@ const addMovie = async (req, res) => {
       priority,
     });
 
-    // Fire-and-forget: notify all users about the new movie
-    sendContentUploadNotification({
-      content: movie,
-      contentType: "movie",
-      createdBy: req.user.id,
-    });
 
     return res.status(201).json({
       success: true,

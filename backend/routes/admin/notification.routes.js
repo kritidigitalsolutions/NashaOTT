@@ -8,13 +8,17 @@ const {
   getNotifications,
   deleteNotification,
   markAsRead,
-  getUnreadCount
+  getUnreadCount,
+  searchContent,
+  searchPlans
 } = require("../../controllers/admin/notification.controller");
 
 router.use(isAdmin);
 
 router.post("/send", sendNotification);
 router.get("/unread-count", getUnreadCount);
+router.get("/search-content", searchContent);
+router.get("/search-plans", searchPlans);
 router.get("/", getNotifications);
 router.patch("/:id/read", markAsRead);
 router.delete("/:id", deleteNotification);

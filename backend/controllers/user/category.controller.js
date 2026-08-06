@@ -12,10 +12,21 @@ const getActiveCategories = async (req, res) => {
       .sort({ priority: -1, createdAt: -1 })
       .lean();
 
+    const formattedCategories = categories.map((cat) => ({
+      _id: cat._id,
+      name: cat.name,
+      slug: cat.slug,
+      priority: cat.priority !== undefined && cat.priority !== null ? cat.priority : 0,
+      isActive: cat.isActive !== undefined ? cat.isActive : true,
+      createdAt: cat.createdAt,
+      updatedAt: cat.updatedAt,
+    }));
+
     return res.json({
       success: true,
-      count: categories.length,
-      categories,
+      count: formattedCategories.length,
+      data: formattedCategories,
+      categories: formattedCategories,
     });
   } catch (error) {
     console.error("GET ACTIVE CATEGORIES ERROR:", error);
@@ -44,9 +55,15 @@ const getCategoryBySlug = async (req, res) => {
       });
     }
 
+    const formattedCategory = {
+      ...category,
+      priority: category.priority !== undefined && category.priority !== null ? category.priority : 0,
+    };
+
     return res.json({
       success: true,
-      category,
+      data: formattedCategory,
+      category: formattedCategory,
     });
   } catch (error) {
     return res.status(500).json({
@@ -61,16 +78,31 @@ const getCategoryBySlug = async (req, res) => {
 // ========================================
 const getContentByCategory = async (req, res) => {
   try {
-    const { slug } = req.params;
-    const normalizedSlug = String(slug).toLowerCase().trim();
+    const idOrSlug = req.params.id || req.params.slug;
+    const normalizedParam = String(idOrSlug || "").trim();
 
-    // Check category exists
-    const category = await Category.findOne({ slug: normalizedSlug, isActive: true }).lean();
-    
-    const categoryName = category ? category.name : normalizedSlug;
+    const page = Math.max(0, parseInt(req.query.page, 10) || 0);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const skip = page * limit;
+
+    // Check category exists (by ID or Slug)
+    const mongoose = require("mongoose");
+    let category = null;
+    if (mongoose.Types.ObjectId.isValid(normalizedParam)) {
+      category = await Category.findById(normalizedParam).lean();
+    }
+    if (!category) {
+      category = await Category.findOne({
+        slug: normalizedParam.toLowerCase(),
+        isActive: true,
+      }).lean();
+    }
+
+    const categoryName = category ? category.name : normalizedParam;
+    const categorySlug = category ? category.slug : normalizedParam.toLowerCase();
 
     // Search query for matching category name or slug in category array
-    const categoryRegex = new RegExp(`^${categoryName}$|^${normalizedSlug}$`, "i");
+    const categoryRegex = new RegExp(`^${categoryName}$|^${categorySlug}$`, "i");
 
     const [movies, series, shortDramas] = await Promise.all([
       Movie.find({ category: { $elemMatch: { $regex: categoryRegex } } })
@@ -88,15 +120,26 @@ const getContentByCategory = async (req, res) => {
     const formattedSeries = series.map((s) => ({ ...s, type: "series" }));
     const formattedShortDramas = shortDramas.map((d) => ({ ...d, type: "shortdrama" }));
 
-    const content = [...formattedMovies, ...formattedSeries, ...formattedShortDramas].sort(
+    const allContent = [...formattedMovies, ...formattedSeries, ...formattedShortDramas].sort(
       (a, b) => (b.priority || 0) - (a.priority || 0) || new Date(b.createdAt) - new Date(a.createdAt)
     );
 
+    const total = allContent.length;
+    const totalPages = Math.ceil(total / limit);
+    const paginatedContent = allContent.slice(skip, skip + limit);
+
     return res.json({
       success: true,
-      category: category || { name: categoryName, slug: normalizedSlug },
-      total: content.length,
-      content,
+      category: category || { name: categoryName, slug: categorySlug },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: (page + 1) * limit < total,
+        hasPrevPage: page > 0,
+      },
+      content: paginatedContent,
     });
   } catch (error) {
     console.error("GET CONTENT BY CATEGORY ERROR:", error);

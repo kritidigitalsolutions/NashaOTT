@@ -463,3 +463,193 @@ body.light .notif-input {
   color: var(--text-muted);
   white-space: nowrap;
 }
+
+/* ── Attachment Type Radio Row ── */
+.notif-attachment-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.notif-attach-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 30px;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s;
+  user-select: none;
+}
+
+.notif-attach-option input[type="radio"] {
+  display: none;
+}
+
+.notif-attach-option:hover {
+  border-color: var(--purple);
+  color: var(--text);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+.notif-attach-option.active {
+  border-color: var(--purple);
+  background: rgba(139, 92, 246, 0.12);
+  color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+/* ── Content avatar (film icon style) ── */
+.notif-content-avatar {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+}
+
+/* ── Plan avatar ── */
+.notif-plan-avatar {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+/* ── Attachment chip in table ── */
+.notif-attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--purple);
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-no-attach {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* ── View Modal Detail Cards ── */
+.notif-detail-card {
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.notif-detail-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.notif-detail-value {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-top: 4px;
+}
+
+/* ── Pagination ── */
+.notif-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 0 8px;
+  flex-wrap: wrap;
+}
+
+.notif-pg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.notif-pg-btn:hover:not(:disabled) {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.notif-pg-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.notif-pg-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.notif-pg-num {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--text-soft);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.notif-pg-num:hover:not(:disabled) {
+  border-color: var(--purple);
+  color: var(--purple);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.notif-pg-num.active {
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border-color: #8b5cf6;
+  color: white;
+  box-shadow: 0 3px 12px rgba(139, 92, 246, 0.4);
+}
+
+.notif-pg-num:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notif-pg-ellipsis {
+  width: 32px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.notif-pg-info {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding-bottom: 12px;
+}
+
+

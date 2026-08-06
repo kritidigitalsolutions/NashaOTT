@@ -220,9 +220,9 @@ app.use("/api/notifications", userNotificationRoutes);
 const interactionRoutes = require("./routes/user/interation.routes");
 app.use("/api/interaction", interactionRoutes);
 
-// ================Razor Pay===============
-// const paymentRoutes = require("./routes/user/payment.routes");
-// app.use("/api/payment", paymentRoutes);
+// ================SabPaisa Payment Gateway===============
+const paymentRoutes = require("./routes/user/payment.routes");
+app.use("/api/payment", paymentRoutes);
 
 // SUPPORT ROUTES
 const userSupportRoutes = require("./routes/user/support.routes");

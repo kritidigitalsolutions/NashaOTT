@@ -1,4 +1,110 @@
 const Category = require("../../models/category.model");
+const Movie = require("../../models/movie.model");
+const Series = require("../../models/series.model");
+const ShortDrama = require("../../models/shortdrama.model");
+
+// Helper to update categories across content models (Movie, Series, ShortDrama)
+const syncContentCategories = async (oldName, oldSlug, newName, newSlug) => {
+  const contentModels = [Movie, Series, ShortDrama];
+  const oldTargets = [
+    oldName,
+    oldSlug,
+    oldName ? oldName.toLowerCase() : null,
+    oldSlug ? oldSlug.toLowerCase() : null,
+  ].filter(Boolean);
+
+  if (oldTargets.length === 0) return;
+
+  for (const Model of contentModels) {
+    if (!Model) continue;
+
+    const regexTargets = oldTargets.map(
+      (val) => new RegExp(`^${val.replace(/[-[\]{}()*+?.:=\\^$|#\s]/g, "\\$&")}$`, "i")
+    );
+
+    const items = await Model.find({
+      category: { $in: regexTargets },
+    });
+
+    for (const item of items) {
+      if (!Array.isArray(item.category)) continue;
+
+      let isModified = false;
+      const updatedCategories = item.category.map((catStr) => {
+        const catTrimmed = String(catStr).trim();
+        const catLower = catTrimmed.toLowerCase();
+
+        if (oldName && catLower === oldName.toLowerCase()) {
+          isModified = true;
+          return newName;
+        }
+        if (oldSlug && catLower === oldSlug.toLowerCase()) {
+          isModified = true;
+          return newSlug;
+        }
+        return catTrimmed;
+      });
+
+      if (isModified) {
+        item.category = Array.from(new Set(updatedCategories));
+
+        if (item.isTrending !== undefined) {
+          item.isTrending = item.category.some(
+            (c) => String(c).toLowerCase() === "trending"
+          );
+        }
+
+        await item.save();
+      }
+    }
+  }
+};
+
+// Helper to remove deleted category from content models
+const removeCategoryFromContent = async (categoryName, categorySlug) => {
+  const contentModels = [Movie, Series, ShortDrama];
+  const targets = [
+    categoryName,
+    categorySlug,
+    categoryName ? categoryName.toLowerCase() : null,
+    categorySlug ? categorySlug.toLowerCase() : null,
+  ].filter(Boolean);
+
+  if (targets.length === 0) return;
+
+  for (const Model of contentModels) {
+    if (!Model) continue;
+
+    const regexTargets = targets.map(
+      (val) => new RegExp(`^${val.replace(/[-[\]{}()*+?.:=\\^$|#\s]/g, "\\$&")}$`, "i")
+    );
+
+    const items = await Model.find({
+      category: { $in: regexTargets },
+    });
+
+    for (const item of items) {
+      if (!Array.isArray(item.category)) continue;
+
+      const initialLength = item.category.length;
+      item.category = item.category.filter((catStr) => {
+        const catLower = String(catStr).trim().toLowerCase();
+        const isMatchName = categoryName && catLower === categoryName.toLowerCase();
+        const isMatchSlug = categorySlug && catLower === categorySlug.toLowerCase();
+        return !isMatchName && !isMatchSlug;
+      });
+
+      if (item.category.length !== initialLength) {
+        if (item.isTrending !== undefined) {
+          item.isTrending = item.category.some(
+            (c) => String(c).toLowerCase() === "trending"
+          );
+        }
+        await item.save();
+      }
+    }
+  }
+};
 
 // Helper to generate slug
 const generateSlug = (text) => {
@@ -100,14 +206,26 @@ const getAllCategories = async (req, res) => {
       .limit(limit)
       .lean();
 
+    const formattedCategories = categories.map((cat) => ({
+      _id: cat._id,
+      name: cat.name,
+      slug: cat.slug,
+      priority: cat.priority !== undefined && cat.priority !== null ? cat.priority : 0,
+      isActive: cat.isActive !== undefined ? cat.isActive : true,
+      createdAt: cat.createdAt,
+      updatedAt: cat.updatedAt,
+    }));
+
     const total = await Category.countDocuments(queryFilter);
 
     return res.json({
       success: true,
       total,
+      count: formattedCategories.length,
       page,
       pages: Math.ceil(total / limit),
-      categories,
+      data: formattedCategories,
+      categories: formattedCategories,
     });
   } catch (error) {
     console.error("GET ALL CATEGORIES ERROR:", error);
@@ -132,9 +250,15 @@ const getCategoryById = async (req, res) => {
       });
     }
 
+    const formattedCategory = {
+      ...category,
+      priority: category.priority !== undefined && category.priority !== null ? category.priority : 0,
+    };
+
     return res.json({
       success: true,
-      category,
+      data: formattedCategory,
+      category: formattedCategory,
     });
   } catch (error) {
     return res.status(500).json({
@@ -159,6 +283,9 @@ const updateCategory = async (req, res) => {
         message: "Category not found",
       });
     }
+
+    const oldName = category.name;
+    const oldSlug = category.slug;
 
     if (name) {
       const trimmedName = String(name).trim();
@@ -229,6 +356,11 @@ const updateCategory = async (req, res) => {
 
     await category.save();
 
+    // Sync updated category name/slug across all attached content (Movie, Series, ShortDrama)
+    if (oldName !== category.name || oldSlug !== category.slug) {
+      await syncContentCategories(oldName, oldSlug, category.name, category.slug);
+    }
+
     return res.json({
       success: true,
       message: "Category updated successfully",
@@ -256,6 +388,9 @@ const deleteCategory = async (req, res) => {
       });
     }
 
+    const oldName = category.name;
+    const oldSlug = category.slug;
+
     // Capture priority before deletion to shift other priorities
     const targetPriority = category.priority || 0;
 
@@ -265,6 +400,9 @@ const deleteCategory = async (req, res) => {
     if (targetPriority > 0) {
       await Category.updateMany({ priority: { $gt: targetPriority } }, { $inc: { priority: -1 } });
     }
+
+    // Remove deleted category from attached content (Movie, Series, ShortDrama)
+    await removeCategoryFromContent(oldName, oldSlug);
 
     return res.json({
       success: true,

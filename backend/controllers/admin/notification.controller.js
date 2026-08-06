@@ -1,6 +1,9 @@
 const Notification = require("../../models/notification.model");
 const User = require("../../models/user.model");
 const Subscription = require("../../models/subscription.model");
+const Movie = require("../../models/movie.model");
+const Series = require("../../models/series.model");
+const Plan = require("../../models/plan.model");
 const { sendPushNotification } = require("../../utils/fcm.service");
 
 // ── Admin-level "read" tracking uses a separate readByAdmin flag ──────────
@@ -13,8 +16,12 @@ exports.sendNotification = async (req, res) => {
       type,
       sendTo,
       targetUser,
-      actionUrl,
-      imageUrl
+      imageUrl,
+      // Attachment fields
+      attachmentType, // "none" | "content" | "plan"
+      contentId,
+      contentType,   // "movie" | "series"
+      planId
     } = req.body;
 
     if (!title || !message) {
@@ -24,12 +31,28 @@ exports.sendNotification = async (req, res) => {
       });
     }
 
+    // Build metadata
+    const metadata = {};
+
+    if (attachmentType === "content" && contentId && contentType) {
+      metadata.contentId = contentId;
+      metadata.contentType = contentType;
+
+      // Auto-build action URL for mobile deep-link
+      metadata.actionUrl = `nashaapp://${contentType}/id/${contentId}`;
+    } else if (attachmentType === "plan" && planId) {
+      metadata.planId = planId;
+
+      // Auto-build action URL for mobile deep-link
+      metadata.actionUrl = `nashaapp://plan/id/${planId}`;
+    }
+
     const payload = {
       title,
       message,
       type: type || "GENERAL",
       imageUrl: imageUrl || null,
-      metadata: { actionUrl },
+      metadata,
       createdBy: req.user.id,
       sentAt: new Date()
     };
@@ -78,12 +101,14 @@ exports.sendNotification = async (req, res) => {
         title,
         body: message,
         imageUrl: imageUrl || null,
-        actionUrl: actionUrl || null,
+        actionUrl: metadata.actionUrl || null,
         data: {
           notificationId: notification._id.toString(),
           type: type || "GENERAL",
-          actionUrl: actionUrl || "",
-          imageUrl: imageUrl || ""
+          actionUrl: metadata.actionUrl || "",
+          imageUrl: imageUrl || "",
+          ...(metadata.contentId && { contentId: metadata.contentId.toString(), contentType: metadata.contentType || "" }),
+          ...(metadata.planId && { planId: metadata.planId.toString() })
         }
       });
 
@@ -114,13 +139,60 @@ exports.sendNotification = async (req, res) => {
 
 exports.getNotifications = async (req, res) => {
   try {
-    const data = await Notification.find({ isActive: true })
-      .populate("targetUser", "name email phone")
-      .sort({ createdAt: -1 });
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 10);
+    const skip  = (page - 1) * limit;
+
+    const filter = { isActive: true };
+
+    const [data, totalCount] = await Promise.all([
+      Notification.find(filter)
+        .populate("targetUser", "name email phone")
+        .populate("metadata.planId", "name price duration")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Notification.countDocuments(filter),
+    ]);
+
+    // Manually populate metadata.contentId because it has no fixed ref
+    // (it can point to Movie, Series, or ShortDrama depending on contentType)
+    const Movie      = require("../../models/movie.model");
+    const Series     = require("../../models/series.model");
+    const ShortDrama = require("../../models/shortdrama.model");
+
+    const modelMap = {
+      movie:      Movie,
+      series:     Series,
+      shortdrama: ShortDrama,
+    };
+
+    for (const notif of data) {
+      const meta = notif.metadata;
+      if (meta?.contentId && meta?.contentType) {
+        const Model = modelMap[meta.contentType];
+        if (Model) {
+          const doc = await Model
+            .findById(meta.contentId)
+            .select("title poster")
+            .lean();
+          meta.contentId = doc || meta.contentId;
+        }
+      }
+    }
 
     res.status(200).json({
       success: true,
-      data
+      data,
+      pagination: {
+        currentPage: page,
+        totalPages:  Math.ceil(totalCount / limit),
+        totalCount,
+        limit,
+        hasNextPage: page * limit < totalCount,
+        hasPrevPage: page > 1,
+      }
     });
 
   } catch (error) {
@@ -130,6 +202,7 @@ exports.getNotifications = async (req, res) => {
     });
   }
 };
+
 
 exports.deleteNotification = async (req, res) => {
   try {
@@ -189,6 +262,49 @@ exports.getUnreadCount = async (req, res) => {
   try {
     const count = await Notification.countDocuments({ isRead: false, isActive: true });
     res.status(200).json({ success: true, count });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ── Search content (movies / series) for attachment picker ────────────────
+exports.searchContent = async (req, res) => {
+  try {
+    const { q = "", type = "movie" } = req.query;
+    const regex = new RegExp(q, "i");
+
+    let results = [];
+
+    if (type === "movie") {
+      results = await Movie.find({ title: regex })
+        .select("_id title poster")
+        .limit(20)
+        .lean();
+    } else if (type === "series") {
+      results = await Series.find({ title: regex })
+        .select("_id title poster")
+        .limit(20)
+        .lean();
+    }
+
+    res.status(200).json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ── Search plans for attachment picker ────────────────────────────────────
+exports.searchPlans = async (req, res) => {
+  try {
+    const { q = "" } = req.query;
+    const regex = new RegExp(q, "i");
+
+    const results = await Plan.find({ name: regex, isActive: true })
+      .select("_id name price duration")
+      .limit(20)
+      .lean();
+
+    res.status(200).json({ success: true, data: results });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

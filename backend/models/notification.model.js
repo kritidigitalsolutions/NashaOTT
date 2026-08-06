@@ -70,19 +70,11 @@ const notificationSchema = new mongoose.Schema(
 
         // Optional metadata for linking to specific resources
         metadata: {
-            propertyId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Property"
-            },
-            leadId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Lead"
-            },
             planId: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Plan"
             },
-            // Content upload notification metadata
+            // Content attachment metadata
             contentId: {
                 type: mongoose.Schema.Types.ObjectId
             },
@@ -90,6 +82,12 @@ const notificationSchema = new mongoose.Schema(
                 type: String,
                 enum: ["movie", "series", "shortdrama", null],
                 default: null
+            },
+            // Attachment type used in admin panel
+            attachmentType: {
+                type: String,
+                enum: ["none", "content", "plan", null],
+                default: "none"
             },
             actionUrl: String
         },
