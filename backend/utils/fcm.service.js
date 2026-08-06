@@ -17,8 +17,9 @@ const sendPushNotification = async ({ token, title, body, imageUrl, actionUrl, d
       return { success: false, error: "No token provided" };
     }
 
-    const finalImageUrl = imageUrl || data?.imageUrl || data?.image || null;
-    const finalActionUrl = actionUrl || data?.actionUrl || data?.link || null;
+    const getValidUrl = (val) => (val && typeof val === "string" && val.trim().length > 0) ? val.trim() : null;
+    const finalImageUrl = getValidUrl(imageUrl) || getValidUrl(data?.imageUrl) || getValidUrl(data?.image) || getValidUrl(data?.poster) || null;
+    const finalActionUrl = getValidUrl(actionUrl) || getValidUrl(data?.actionUrl) || getValidUrl(data?.link) || null;
 
     if (!firebaseInitialized) {
       console.log("-----------------------------------------");
@@ -45,6 +46,7 @@ const sendPushNotification = async ({ token, title, body, imageUrl, actionUrl, d
     if (finalImageUrl) {
       stringifiedData.imageUrl = String(finalImageUrl);
       stringifiedData.image = String(finalImageUrl);
+      stringifiedData.poster = String(finalImageUrl);
     }
     if (finalActionUrl) {
       stringifiedData.actionUrl = String(finalActionUrl);

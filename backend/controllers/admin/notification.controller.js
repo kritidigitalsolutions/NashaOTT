@@ -31,27 +31,52 @@ exports.sendNotification = async (req, res) => {
       });
     }
 
+    let resolvedImageUrl = (imageUrl && String(imageUrl).trim()) ? String(imageUrl).trim() : null;
+
     // Build metadata
     const metadata = {};
 
-    if (attachmentType === "content" && contentId && contentType) {
+    // Resolve content metadata whenever contentId & contentType are present,
+    // regardless of attachmentType (the admin panel sometimes sends
+    // attachmentType:"none" even when a content item is selected).
+    if (contentId && contentType) {
       metadata.contentId = contentId;
       metadata.contentType = contentType;
 
       // Auto-build action URL for mobile deep-link
       metadata.actionUrl = `nashaapp://${contentType}/id/${contentId}`;
-    } else if (attachmentType === "plan" && planId) {
-      metadata.planId = planId;
 
-      // Auto-build action URL for mobile deep-link
-      metadata.actionUrl = `nashaapp://plan/id/${planId}`;
+      // Auto-fetch content poster if no explicit imageUrl was provided
+      if (!resolvedImageUrl) {
+        let Model;
+        if (contentType === "movie") Model = Movie;
+        else if (contentType === "series") Model = Series;
+        else if (contentType === "shortdrama") {
+          try { Model = require("../../models/shortdrama.model"); } catch (e) {}
+        }
+
+        if (Model) {
+          const contentDoc = await Model.findById(contentId).select("poster banner thumbnail").lean();
+          if (contentDoc) {
+            resolvedImageUrl = contentDoc.poster || contentDoc.banner || contentDoc.thumbnail || null;
+            console.log("[Notification] Auto-resolved image from content:", resolvedImageUrl);
+          }
+        }
+      }
+    }
+
+    if (planId) {
+      metadata.planId = planId;
+      if (!metadata.actionUrl) {
+        metadata.actionUrl = `nashaapp://plan/id/${planId}`;
+      }
     }
 
     const payload = {
       title,
       message,
       type: type || "GENERAL",
-      imageUrl: imageUrl || null,
+      imageUrl: resolvedImageUrl || null,
       metadata,
       createdBy: req.user.id,
       sentAt: new Date()
@@ -100,13 +125,16 @@ exports.sendNotification = async (req, res) => {
         token: user.fcmToken,
         title,
         body: message,
-        imageUrl: imageUrl || null,
+        imageUrl: resolvedImageUrl || null,
         actionUrl: metadata.actionUrl || null,
         data: {
           notificationId: notification._id.toString(),
           type: type || "GENERAL",
           actionUrl: metadata.actionUrl || "",
-          imageUrl: imageUrl || "",
+          link: metadata.actionUrl || "",
+          imageUrl: resolvedImageUrl || "",
+          image: resolvedImageUrl || "",
+          poster: resolvedImageUrl || "",
           ...(metadata.contentId && { contentId: metadata.contentId.toString(), contentType: metadata.contentType || "" }),
           ...(metadata.planId && { planId: metadata.planId.toString() })
         }
