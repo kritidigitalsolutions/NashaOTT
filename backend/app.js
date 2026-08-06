@@ -37,6 +37,10 @@ const defaultAllowed = [
   process.env.ADMIN_URL,
   "http://localhost:3000",
   "http://localhost:3001",
+  "http://localhost:5173",
+  "https://admin.nazarott.com",
+  "https://nazarott.com",
+  "https://www.nazarott.com",
   "https://scintillating-meerkat-efbf09.netlify.app",
   "https://nazarott.netlify.app"
 ].filter(Boolean);
@@ -55,13 +59,19 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Dynamic pattern matching for development / Vercel preview environments
-    const isLocalhost = origin.startsWith("http://localhost:") || origin.startsWith("http://127.0.0.1:");
+    // Dynamic pattern matching for development, production, and Vercel preview environments
+    const isLocalhost =
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("http://127.0.0.1:") ||
+      origin.startsWith("http://192.168.");
+    const isNazarDomain =
+      origin === "https://nazarott.com" ||
+      origin.endsWith(".nazarott.com");
     const isNazarVercel =
       origin.endsWith(".vercel.app") &&
-      origin.includes("nazar-ott-admin-panel");
+      (origin.includes("nazar") || origin.includes("nasha"));
 
-    if (isLocalhost || isNazarVercel) {
+    if (isLocalhost || isNazarDomain || isNazarVercel) {
       return callback(null, true);
     }
 
