@@ -492,3 +492,87 @@ exports.googleLogin = async (req, res) => {
     });
   }
 };
+
+
+// ========================================
+// WEBSITE SSO LOGIN
+// ========================================
+exports.websiteSSOLogin = async (req, res) => {
+  try {
+    let appToken = null;
+    const authHeader = req.headers.authorization;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      appToken = authHeader.split(" ")[1];
+    } else if (req.body && req.body.token) {
+      appToken = req.body.token;
+    } else if (req.query && req.query.token) {
+      appToken = req.query.token;
+    }
+
+    if (!appToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Authentication token missing",
+      });
+    }
+
+    let decoded;
+
+    try {
+      decoded = jwt.verify(
+        appToken,
+        process.env.JWT_SECRET
+      );
+    } catch (err) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired token",
+      });
+    }
+
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid token payload",
+      });
+    }
+
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.lastLoginAt = new Date();
+    await user.save();
+
+    // Generate fresh website token
+    const websiteToken = generateUserToken(user);
+
+    return res.status(200).json({
+      success: true,
+      message: "Website login successful",
+      token: websiteToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        profileImage: user.profileImage,
+        role: user.role,
+      },
+    });
+
+  } catch (error) {
+    console.error("WEBSITE SSO LOGIN:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};

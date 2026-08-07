@@ -59,6 +59,11 @@ authProvider: {
             default: "USER",
         },
 
+        lastLoginAt: {
+            type: Date,
+            default: null,
+        },
+
         // subscriptions: [
         //   {
         //     type: mongoose.Schema.Types.ObjectId,
