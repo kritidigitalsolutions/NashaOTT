@@ -335,39 +335,93 @@ exports.getIncomeStats =
 // =====================================================
 // 📋 GET ALL SUBSCRIPTIONS
 // =====================================================
-exports.getAllSubscriptions =
-  async (req, res) => {
-    try {
+exports.getAllSubscriptions = async (req, res) => {
+  try {
+    // auto cleanup
+    await expireOldSubscriptions();
 
-      // auto cleanup
-      await expireOldSubscriptions();
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit, 10) || 10);
+    const skip = (page - 1) * limit;
 
-      const subscriptions =
-        await Subscription.find()
-          .populate(
-            "user",
-            "name email"
-          )
-          .populate("plan")
-          .sort({
-            createdAt: -1,
-          });
+    const query = {};
 
-      res.status(200).json({
-        success: true,
-        subscriptions,
-      });
+    // Filter by status if provided
+    if (req.query.status) {
+      query.status = req.query.status;
+    }
 
-    } catch (error) {
+    // Filter by search if provided (search user name or email)
+    if (req.query.search) {
+      const users = await User.find({
+        $or: [
+          { name: { $regex: req.query.search, $options: "i" } },
+          { email: { $regex: req.query.search, $options: "i" } }
+        ]
+      }).select("_id");
+      const userIds = users.map(u => u._id);
+      query.user = { $in: userIds };
+    }
 
-      console.error(
-        "Get All Subscriptions Error:",
-        error
-      );
+    const totalSubscriptions = await Subscription.countDocuments(query);
+    const totalPages = Math.ceil(totalSubscriptions / limit);
 
-      res.status(500).json({
+    const subscriptions = await Subscription.find(query)
+      .populate("user", "name email")
+      .populate("plan")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      subscriptions,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalSubscriptions,
+        limit
+      }
+    });
+
+  } catch (error) {
+    console.error("Get All Subscriptions Error:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch subscriptions",
+    });
+  }
+};
+
+// =====================================================
+// 🔁 CANCEL SUBSCRIPTION (ADMIN)
+// =====================================================
+exports.cancelSubscriptionAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const subscription = await Subscription.findById(id);
+    if (!subscription) {
+      return res.status(404).json({
         success: false,
-        message: error.message,
+        message: "Subscription not found",
       });
     }
-  };
+
+    subscription.status = "cancelled";
+    await subscription.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Subscription cancelled successfully",
+      subscription,
+    });
+  } catch (err) {
+    console.error("Cancel Subscription Admin Error:", err);
+    res.status(500).json({
+      success: false,
+      message: err.message || "Failed to cancel subscription",
+    });
+  }
+};

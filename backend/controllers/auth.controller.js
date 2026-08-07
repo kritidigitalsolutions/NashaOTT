@@ -83,6 +83,29 @@ exports.sendOTP = async (req, res) => {
       });
     }
 
+    const user = await User.findOne({ phone: normalizedPhone });
+    if (user && user.isBlocked) {
+      return res.status(200).json({
+        success: true,
+        message: "Your account has been blocked. Please contact support.",
+        user: {
+          _id: user._id,
+          name: user.name,
+          authProvider: user.authProvider,
+          phone: user.phone,
+          profileImage: user.profileImage,
+          profileComplete: user.profileComplete,
+          fcmToken: user.fcmToken,
+          fcmTokenUpdatedAt: user.fcmTokenUpdatedAt,
+          role: user.role,
+          lastLoginAt: user.lastLoginAt,
+          isBlocked: true,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        }
+      });
+    }
+
     // rate limit
     let recentOtp = null;
     if (normalizedPhone !== "+919999999999") {
@@ -113,11 +136,7 @@ exports.sendOTP = async (req, res) => {
       otp = "123456";
     }
 
-    // check if user exists
-    const user = await User.findOne({
-      phone: normalizedPhone,
-    });
-
+    // check if user exists (already fetched above)
     const isNewUser =
       !user || !user.profileComplete;
 
@@ -255,6 +274,28 @@ exports.verifyOtp = async (req, res) => {
     let user = await User.findOne({
       phone: normalizedPhone,
     });
+
+    if (user && user.isBlocked) {
+      return res.status(200).json({
+        success: true,
+        message: "Your account has been blocked. Please contact support.",
+        user: {
+          _id: user._id,
+          name: user.name,
+          authProvider: user.authProvider,
+          phone: user.phone,
+          profileImage: user.profileImage,
+          profileComplete: user.profileComplete,
+          fcmToken: user.fcmToken,
+          fcmTokenUpdatedAt: user.fcmTokenUpdatedAt,
+          role: user.role,
+          lastLoginAt: user.lastLoginAt,
+          isBlocked: true,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        }
+      });
+    }
 
     // create user automatically
     if (!user) {
@@ -408,6 +449,28 @@ exports.googleLogin = async (req, res) => {
       ]
     });
 
+    if (user && user.isBlocked) {
+      return res.status(200).json({
+        success: true,
+        message: "Your account has been blocked. Please contact support.",
+        user: {
+          _id: user._id,
+          name: user.name,
+          authProvider: user.authProvider,
+          email: user.email,
+          profileImage: user.profileImage,
+          profileComplete: user.profileComplete,
+          fcmToken: user.fcmToken,
+          fcmTokenUpdatedAt: user.fcmTokenUpdatedAt,
+          role: user.role,
+          lastLoginAt: user.lastLoginAt,
+          isBlocked: true,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        }
+      });
+    }
+
     let isNewUser = false;
 
     // Create new user if not exists
@@ -544,6 +607,29 @@ exports.websiteSSOLogin = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "User not found",
+      });
+    }
+
+    if (user.isBlocked) {
+      return res.status(200).json({
+        success: true,
+        message: "Your account has been blocked. Please contact support.",
+        user: {
+          _id: user._id,
+          name: user.name,
+          authProvider: user.authProvider,
+          email: user.email,
+          phone: user.phone,
+          profileImage: user.profileImage,
+          profileComplete: user.profileComplete,
+          fcmToken: user.fcmToken,
+          fcmTokenUpdatedAt: user.fcmTokenUpdatedAt,
+          role: user.role,
+          lastLoginAt: user.lastLoginAt,
+          isBlocked: true,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        }
       });
     }
 

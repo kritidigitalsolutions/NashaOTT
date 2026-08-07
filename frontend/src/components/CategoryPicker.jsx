@@ -40,7 +40,7 @@ export default function CategoryPicker({ selected = [], onChange }) {
               className={`category-chip-btn ${isSel ? "active" : ""}`}
               onClick={() => toggle(cat.slug)}
             >
-              {cat.name}
+              {cat.name} ({cat.slug})
             </button>
           );
         })

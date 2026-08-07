@@ -85,6 +85,8 @@ export default function NotificationsPage() {
 
   // ── User dropdown ref ─────────────────────────────────────────────────
   const userWrapRef = useRef(null);
+  const userSearchTimer = useRef(null);
+  const userLoadedRef   = useRef(false);
 
   // ── Toast helper ──────────────────────────────────────────────────────
   const showToast = (msg, type = "success") => {
@@ -106,19 +108,35 @@ export default function NotificationsPage() {
     }
   }, []);
 
-  // ── Fetch users for searchable dropdown ───────────────────────────────
-  const fetchUsers = useCallback(async () => {
-    try {
-      const res = await API.get("/admin/users");
-      setUsers(res.data.users || res.data.data || []);
-    } catch {
-      // Non-critical — fallback to empty list
+  // ── User search (debounced) ───────────────────────────────────────────
+  const handleUserSearch = (value) => {
+    setForm(prev => ({ ...prev, userSearch: value }));
+    clearTimeout(userSearchTimer.current);
+    userSearchTimer.current = setTimeout(async () => {
+      try {
+        const res = await API.get("/admin/users", {
+          params: { q: value, limit: 20 }
+        });
+        setUsers(res.data.users || res.data.data || []);
+        setUserDropOpen(true);
+        userLoadedRef.current = true;
+      } catch {
+        setUsers([]);
+      }
+    }, 300);
+  };
+
+  // ── Load users on first focus ─────────────────────────────────────────
+  const handleUserFocus = () => {
+    if (selectedUser) return;
+    setUserDropOpen(true);
+    if (!userLoadedRef.current) {
+      handleUserSearch("");
     }
-  }, []);
+  };
 
   useEffect(() => {
     fetchNotifications(currentPage);
-    fetchUsers();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -220,13 +238,6 @@ export default function NotificationsPage() {
   // ── Form input change ─────────────────────────────────────────────────
   const ch = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // ── Filtered user list ────────────────────────────────────────────────
-  const filteredUsers = users.filter(
-    (u) =>
-      (u.name  || "").toLowerCase().includes(form.userSearch.toLowerCase()) ||
-      (u.email || "").toLowerCase().includes(form.userSearch.toLowerCase()) ||
-      (u.phone || "").includes(form.userSearch)
-  );
 
   // ── Send notification ─────────────────────────────────────────────────
   const handleSend = async (e) => {
@@ -275,8 +286,10 @@ export default function NotificationsPage() {
       setSelectedUser(null);
       setSelectedContent(null);
       setSelectedPlan(null);
+      setUsers([]);
       setContentResults([]);
       setPlanResults([]);
+      userLoadedRef.current = false;
       setCurrentPage(1); // go back to first page after send
       fetchNotifications(1); // refresh table
     } catch (err) {
@@ -292,8 +305,10 @@ export default function NotificationsPage() {
     setSelectedUser(null);
     setSelectedContent(null);
     setSelectedPlan(null);
+    setUsers([]);
     setContentResults([]);
     setPlanResults([]);
+    userLoadedRef.current = false;
   };
 
   // ── Delete notification ───────────────────────────────────────────────
@@ -418,6 +433,8 @@ export default function NotificationsPage() {
                   ch(e);
                   setSelectedUser(null);
                   setUserDropOpen(false);
+                  userLoadedRef.current = false;
+                  setUsers([]);
                 }}
               >
                 <option value="All Users">All Users</option>
@@ -438,18 +455,22 @@ export default function NotificationsPage() {
                   placeholder="Search by name / email / phone"
                   value={selectedUser ? (selectedUser.name || selectedUser.email) : form.userSearch}
                   onChange={(e) => {
-                    if (selectedUser) setSelectedUser(null);
-                    setForm({ ...form, userSearch: e.target.value });
-                    setUserDropOpen(true);
+                    setSelectedUser(null);
+                    handleUserSearch(e.target.value);
                   }}
-                  onFocus={() => setUserDropOpen(true)}
+                  onFocus={handleUserFocus}
                   autoComplete="off"
                 />
                 {selectedUser && (
                   <button
                     type="button"
                     className="notif-user-clear"
-                    onClick={() => { setSelectedUser(null); setForm({ ...form, userSearch: "" }); }}
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setForm(prev => ({ ...prev, userSearch: "" }));
+                      userLoadedRef.current = false;
+                      setUsers([]);
+                    }}
                   >
                     <X size={14} />
                   </button>
@@ -457,10 +478,10 @@ export default function NotificationsPage() {
 
                 {userDropOpen && !selectedUser && (
                   <div className="notif-user-dropdown">
-                    {filteredUsers.length === 0 ? (
+                    {users.length === 0 ? (
                       <div className="notif-user-empty">No users found</div>
                     ) : (
-                      filteredUsers.map((u) => (
+                      users.map((u) => (
                         <div
                           key={u._id || u.id}
                           className="notif-user-option"

@@ -29,8 +29,11 @@ API.interceptors.request.use((req) => {
 API.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid - clear storage
+    if (
+      error.response?.status === 401 ||
+      (error.response?.status === 403 && error.response?.data?.message?.toLowerCase().includes("blocked"))
+    ) {
+      // Token expired, invalid, or user blocked - clear storage
       localStorage.removeItem("token");
       localStorage.removeItem("admin");
       window.location.href = "/";

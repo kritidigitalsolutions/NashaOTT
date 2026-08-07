@@ -32,14 +32,16 @@ const categorySchema = new mongoose.Schema(
   }
 );
 
-// Auto-generate slug from name if missing
+// Generate the slug only when a category is created. Content records use the
+// slug as their category reference, so changing it on a rename would detach
+// existing movies, series, and dramas from this category.
 categorySchema.pre("save", function () {
-  if (this.isModified("name") || !this.slug) {
+  if (this.isNew && !this.slug) {
     this.slug = this.name
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w-]+/g, "");
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }
 });
 

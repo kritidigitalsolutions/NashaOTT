@@ -42,8 +42,19 @@ export default function Drama() {
   const [newEpVideo, setNewEpVideo] = useState(null);
   const [newEpThumb, setNewEpThumb] = useState(null);
   const [addingEp, setAddingEp] = useState(false);
+  const [categories, setCategories] = useState([]);
 
   const searchTimeout = useRef(null);
+
+  useEffect(() => {
+    API.get("/admin/categories?limit=100")
+      .then((res) => {
+        if (res.data && res.data.categories) {
+          setCategories(res.data.categories);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   const getFullUrl = (url) => {
     if (!url) return "";
@@ -56,6 +67,16 @@ export default function Drama() {
     const cleanBase = BASE_URL.endsWith("/") ? BASE_URL.slice(0, -1) : BASE_URL;
     const cleanPath = url.startsWith("/") ? url : `/${url}`;
     return `${cleanBase}${cleanPath}`;
+  };
+
+  const getCategoryDisplay = (itemCategories) => {
+    if (!itemCategories) return "";
+    const catList = Array.isArray(itemCategories) ? itemCategories : [itemCategories];
+    const displays = catList.map(slug => {
+      const match = categories.find(c => c.slug === slug);
+      return match ? match.name : slug;
+    });
+    return displays.join(", ");
   };
 
   /* ── FETCH ── */
@@ -399,7 +420,7 @@ export default function Drama() {
                           </div>
                         </td>
                         <td>{Array.isArray(drama.genre) ? drama.genre.join(", ") : drama.genre}</td>
-                        <td>{Array.isArray(drama.category) ? drama.category.join(", ") : drama.category}</td>
+                        <td>{getCategoryDisplay(drama.category)}</td>
                         <td>
                           <button
                             className="link-btn"
@@ -600,7 +621,10 @@ export default function Drama() {
                     <p style={{ color: "var(--text-muted)", marginBottom: 12 }}>{selectedItem.description}</p>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                       {selectedItem.genre?.map(g => <span key={g} className="badge badge-pub">{g}</span>)}
-                      {selectedItem.category?.map(c => <span key={c} className="badge badge-coming">{c}</span>)}
+                      {selectedItem.category?.map(c => {
+                        const match = categories.find(cat => cat.slug === c);
+                        return <span key={c} className="badge badge-coming">{match ? match.name : c}</span>;
+                      })}
                     </div>
                     <div style={{ marginTop: 12, fontSize: "0.9rem", color: "var(--text-muted)" }}>
                       <div><Globe size={14} style={{ marginRight: 4 }} />{selectedItem.language}</div>
@@ -652,9 +676,9 @@ export default function Drama() {
                     <label className="form-label"><Layers size={14} /> Category</label>
                     <select className="form-input-styled" value={Array.isArray(editData.category) ? editData.category[0] || "" : editData.category || ""} onChange={e => setEditData(p => ({ ...p, category: [e.target.value].filter(Boolean) }))}>
                       <option value="">Select</option>
-                      <option value="trending">Trending</option>
-                      <option value="top10">Top 10</option>
-                      <option value="recommended">Recommended</option>
+                      {categories.map(cat => (
+                        <option key={cat._id} value={cat.slug}>{cat.name}</option>
+                      ))}
                     </select>
                   </div>
                   <div>

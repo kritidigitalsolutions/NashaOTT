@@ -87,3 +87,14 @@ exports.deleteRating = async (req, res) => {
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
+
+// ⭐ DELETE ALL RATINGS (ADMIN)
+exports.deleteAllRatings = async (req, res) => {
+    try {
+        await Rating.deleteMany({});
+        res.json({ success: true, message: "All ratings deleted successfully" });
+    } catch (error) {
+        console.error("Delete All Ratings Error:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};

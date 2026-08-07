@@ -770,6 +770,17 @@ export default function Content() {
 
 
 
+  /* ===================== CATEGORY DISPLAY HELPER ===================== */
+  const getCategoryDisplay = (itemCategories) => {
+    if (!itemCategories) return "";
+    const catList = Array.isArray(itemCategories) ? itemCategories : [itemCategories];
+    const displays = catList.map(slug => {
+      const match = categories.find(c => c.slug === slug);
+      return match ? match.name : slug;
+    });
+    return displays.join(", ");
+  };
+
   /* ===================== RENDER ===================== */
   return (
     <div className="page-section">
@@ -890,12 +901,12 @@ export default function Content() {
                 <table className="tbl">
                   <thead>
                     <tr>
-                      <th>Title</th><th>Genre</th><th>Year</th><th>Rating</th><th>Priority</th><th>Premium</th><th>18+</th><th>Status</th><th>Actions</th>
+                      <th>Title</th><th>Category</th><th>Year</th><th>Priority</th><th>Premium</th><th>18+</th><th>Status</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayData.length === 0 ? (
-                      <tr><td colSpan={9}>No movies found</td></tr>
+                      <tr><td colSpan={8}>No movies found</td></tr>
                     ) : displayData.map(movie => (
                       <tr key={movie._id}>
                         <td>
@@ -913,9 +924,8 @@ export default function Content() {
                             </div>
                           </div>
                         </td>
-                        <td>{Array.isArray(movie.category) ? movie.category.join(", ") : movie.category}</td>
+                        <td>{getCategoryDisplay(movie.category)}</td>
                         <td>{movie.releaseYear}</td>
-                        <td>{movie.rating}</td>
                         <td><strong>{movie.priority || 0}</strong></td>
                         <td><span className={`badge ${movie.isPremium ? "badge-active" : "badge-draft"}`}>{movie.isPremium ? "Premium" : "Free"}</span></td>
                         <td><span className={`badge ${movie.is18Plus ? "badge-coming" : "badge-draft"}`}>{movie.is18Plus ? "18+" : "No"}</span></td>
@@ -957,12 +967,14 @@ export default function Content() {
                 </table>
               </div>
             )}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              onPageChange={setCurrentPage}
-            />
+            {searchResults === null && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            )}
           </div>
         )}
 
@@ -979,7 +991,7 @@ export default function Content() {
                 <table className="tbl">
                   <thead>
                     <tr>
-                      <th>Title</th><th>Genre</th><th>Year</th><th>Rating</th><th>Priority</th><th>Seasons</th><th>18+</th><th>Status</th><th>Actions</th>
+                      <th>Title</th><th>Category</th><th>Year</th><th>Priority</th><th>Seasons</th><th>Premium</th><th>18+</th><th>Status</th><th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1001,11 +1013,11 @@ export default function Content() {
                             </div>
                           </div>
                         </td>
-                        <td>{Array.isArray(series.category) ? series.category.join(", ") : series.category}</td>
+                        <td>{getCategoryDisplay(series.category)}</td>
                         <td>{series.releaseYear}</td>
-                        <td>{series.rating}</td>
                         <td><strong>{series.priority || 0}</strong></td>
                         <td>{series.totalSeasons}</td>
+                        <td><span className={`badge ${series.isPremium ? "badge-active" : "badge-draft"}`}>{series.isPremium ? "Premium" : "Free"}</span></td>
                         <td><span className={`badge ${series.is18Plus ? "badge-coming" : "badge-draft"}`}>{series.is18Plus ? "18+" : "No"}</span></td>
                         <td>
                           <span
@@ -1048,12 +1060,14 @@ export default function Content() {
                 </table>
               </div>
             )}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              onPageChange={setCurrentPage}
-            />
+            {searchResults === null && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            )}
           </div>
         )}
 
@@ -1451,8 +1465,6 @@ export default function Content() {
                       <div className="vp-quick-meta">
                         <span><Calendar size={13} /> {selectedItem.releaseYear}</span>
                         <span className="vp-dot">•</span>
-                        <span>⭐ {selectedItem.rating}/10</span>
-                        <span className="vp-dot">•</span>
                         <span>{selectedItem.duration || "N/A"}</span>
                         <span className="vp-dot">•</span>
                         <span>{selectedItem.language || "N/A"}</span>
@@ -1477,9 +1489,14 @@ export default function Content() {
                       <span key={i} className="vp-pill">{g}</span>
                     ))}
                     {selectedItem.isPremium && <span className="vp-pill vp-pill-gold">★ Premium</span>}
-                    {(Array.isArray(selectedItem.category) ? selectedItem.category : [selectedItem.category]).filter(Boolean).map((c, i) => (
-                      <span key={`c-${i}`} className="vp-pill vp-pill-blue">{c}</span>
-                    ))}
+                    {(Array.isArray(selectedItem.category) ? selectedItem.category : [selectedItem.category]).filter(Boolean).map((c, i) => {
+                      const match = categories.find(cat => cat.slug === c);
+                      return (
+                        <span key={`c-${i}`} className="vp-pill vp-pill-blue">
+                          {match ? `${match.name} (${c})` : c}
+                        </span>
+                      );
+                    })}
                   </div>
 
                   {/* Description */}
@@ -1541,10 +1558,6 @@ export default function Content() {
                       <div className="vp-detail-card">
                         <span className="vp-detail-label">Duration</span>
                         <span className="vp-detail-value">{selectedItem.duration || "N/A"}</span>
-                      </div>
-                      <div className="vp-detail-card">
-                        <span className="vp-detail-label">Rating</span>
-                        <span className="vp-detail-value">{selectedItem.rating} ⭐</span>
                       </div>
                       <div className="vp-detail-card">
                         <span className="vp-detail-label">Priority</span>

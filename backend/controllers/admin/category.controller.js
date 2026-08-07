@@ -36,7 +36,7 @@ const syncContentCategories = async (oldName, oldSlug, newName, newSlug) => {
 
         if (oldName && catLower === oldName.toLowerCase()) {
           isModified = true;
-          return newName;
+          return newSlug;
         }
         if (oldSlug && catLower === oldSlug.toLowerCase()) {
           isModified = true;
@@ -289,33 +289,21 @@ const updateCategory = async (req, res) => {
 
     if (name) {
       const trimmedName = String(name).trim();
-      const newSlug = slug ? generateSlug(slug) : generateSlug(trimmedName);
 
-      // Check name/slug conflict with other category
+      // Check name conflict with other category
       const conflict = await Category.findOne({
         _id: { $ne: id },
-        $or: [{ name: new RegExp(`^${trimmedName}$`, "i") }, { slug: newSlug }],
+        name: new RegExp(`^${trimmedName}$`, "i"),
       });
 
       if (conflict) {
         return res.status(400).json({
           success: false,
-          message: "Another category already exists with this name or slug",
+          message: "Another category already exists with this name",
         });
       }
 
       category.name = trimmedName;
-      category.slug = newSlug;
-    } else if (slug) {
-      const newSlug = generateSlug(slug);
-      const conflict = await Category.findOne({ _id: { $ne: id }, slug: newSlug });
-      if (conflict) {
-        return res.status(400).json({
-          success: false,
-          message: "Another category already exists with this slug",
-        });
-      }
-      category.slug = newSlug;
     }
 
     // ========================================

@@ -38,6 +38,22 @@ export default function RatingsPage() {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to delete ALL user ratings? This action is permanent and cannot be undone.")) return;
+    const secondaryConfirm = window.confirm("Please confirm once more: Do you really want to clear all feedback ratings?");
+    if (!secondaryConfirm) return;
+
+    try {
+      await API.delete("rating/delete-all");
+      setRatings([]);
+      setSelectedRating(null);
+      alert("All ratings deleted successfully");
+    } catch (err) {
+      console.error("Error deleting all ratings:", err);
+      alert("Failed to delete all ratings");
+    }
+  };
+
   const filteredRatings = ratings.filter((r) => {
     const term = searchQuery.toLowerCase();
     const nameMatch = (r.user?.name || "").toLowerCase().includes(term);
@@ -55,16 +71,41 @@ export default function RatingsPage() {
           <p className="pg-sub">All user feedback and reviews</p>
         </div>
         
-        {/* Search Bar */}
-        <div className="search-bar" style={{ width: "300px" }}>
-          <Search size={16} className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search ratings..."
-            className="search-input"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* Search Bar */}
+          <div className="search-bar" style={{ width: "300px" }}>
+            <Search size={16} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Search ratings..."
+              className="search-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Delete All Button */}
+          {ratings.length > 0 && (
+            <button
+              className="btn btn-danger-premium"
+              style={{
+                height: "46px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                padding: "0 18px",
+                fontWeight: "600",
+                borderRadius: "var(--radius-sm)",
+                border: "none",
+                color: "#fff"
+              }}
+              onClick={handleDeleteAll}
+              title="Delete All Ratings"
+            >
+              <Trash2 size={16} />
+              Delete All
+            </button>
+          )}
         </div>
       </div>
 
@@ -144,45 +185,132 @@ export default function RatingsPage() {
       {/* View Modal */}
       {selectedRating && (
         <div className="modal-overlay" onClick={() => setSelectedRating(null)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
-            <div className="modal-header">
-              <h2>Rating Details</h2>
-              <button className="btn-close" onClick={() => setSelectedRating(null)}>
-                <X size={20} />
+          <div className="modal-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
+            <div className="modal-head">
+              <h3>Rating Details</h3>
+              <button className="modal-close" onClick={() => setSelectedRating(null)}>
+                <X size={18} />
               </button>
             </div>
-            <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "15px" }}>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <div style={{ width: "40px", height: "40px", borderRadius: "50%", backgroundColor: "var(--primary)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>
+            
+            <div className="modal-body" style={{ gap: "20px" }}>
+              {/* User Identity Info */}
+              <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+                <div style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  background: "var(--primary-dim)",
+                  color: "var(--primary)",
+                  border: "1px solid var(--border)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: "800",
+                  fontSize: "1.2rem",
+                  boxShadow: "var(--shadow-sm)"
+                }}>
                   {(selectedRating.user?.name || "N")[0].toUpperCase()}
                 </div>
-                <div>
-                  <h3 style={{ margin: 0 }}>{selectedRating.user?.name || "N/A"}</h3>
-                  <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <h4 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "700", color: "var(--text)" }}>
+                    {selectedRating.user?.name || "N/A"}
+                  </h4>
+                  <span style={{ color: "var(--text-muted)", fontSize: "0.85rem", fontWeight: "500" }}>
                     {selectedRating.user?.email || "N/A"}
-                  </p>
+                  </span>
                 </div>
               </div>
-              
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span className="badge badge-active" style={{ fontSize: "1rem", padding: "8px 12px" }}>
-                  ⭐ {selectedRating.rating}/5
-                </span>
-                <span style={{ color: "var(--text-muted)", fontSize: "0.85rem" }}>
-                  {new Date(selectedRating.createdAt).toLocaleString("en-IN")}
+
+              {/* Rating Score & Time */}
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "12px 16px",
+                backgroundColor: "var(--bg3)",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border)"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "2px" }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span key={star} style={{
+                        color: star <= selectedRating.rating ? "var(--primary)" : "var(--border2)",
+                        fontSize: "1.25rem",
+                        lineHeight: 1
+                      }}>
+                        ★
+                      </span>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: "0.95rem", fontWeight: "700", color: "var(--text)", marginLeft: "4px" }}>
+                    ({selectedRating.rating}/5)
+                  </span>
+                </div>
+                <span style={{ color: "var(--text-muted)", fontSize: "0.8rem", fontWeight: "500" }}>
+                  {new Date(selectedRating.createdAt).toLocaleString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true
+                  })}
                 </span>
               </div>
-              
-              <div style={{ backgroundColor: "var(--bg-lighter)", padding: "15px", borderRadius: "8px", border: "1px solid var(--border)" }}>
-                <h4 style={{ margin: "0 0 10px 0", fontSize: "0.9rem", color: "var(--text-muted)" }}>Review</h4>
-                <p style={{ margin: 0, lineHeight: 1.5 }}>
-                  {selectedRating.review || <span style={{ fontStyle: "italic", color: "var(--text-muted)" }}>No written review provided.</span>}
+
+              {/* Written Review */}
+              <div style={{
+                backgroundColor: "var(--bg3)",
+                padding: "16px",
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--border)",
+              }}>
+                <span style={{
+                  display: "block",
+                  fontSize: "0.75rem",
+                  fontWeight: "700",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  color: "var(--primary)",
+                  marginBottom: "8px"
+                }}>
+                  Review Comment
+                </span>
+                <p style={{
+                  margin: 0,
+                  lineHeight: 1.5,
+                  color: "var(--text-soft)",
+                  fontSize: "0.95rem",
+                  fontWeight: "500",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word"
+                }}>
+                  {selectedRating.review || (
+                    <span style={{ fontStyle: "italic", color: "var(--text-muted)" }}>
+                      No written review provided.
+                    </span>
+                  )}
                 </p>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setSelectedRating(null)}>Close</button>
-              <button className="btn btn-danger" onClick={() => handleDelete(selectedRating._id)}>Delete Rating</button>
+
+            <div className="modal-foot">
+              <button 
+                className="btn btn-glass" 
+                style={{ padding: "10px 20px", borderRadius: "var(--radius-sm)", fontSize: "0.9rem" }}
+                onClick={() => setSelectedRating(null)}
+              >
+                Close
+              </button>
+              <button 
+                className="btn btn-danger-premium" 
+                style={{ padding: "10px 20px", borderRadius: "var(--radius-sm)", fontSize: "0.9rem" }}
+                onClick={() => handleDelete(selectedRating._id)}
+              >
+                Delete Rating
+              </button>
             </div>
           </div>
         </div>

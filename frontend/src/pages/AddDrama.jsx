@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./Dashboard.css";
 import API from "../api/axios";
 import { uploadToBunny } from "../features/services/bunnyUpload";
@@ -56,6 +56,14 @@ export default function AddDrama() {
   const posterInputRef = useRef(null);
   const bannerInputRef = useRef(null);
   const trailerInputRef = useRef(null);
+
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    API.get("/categories")
+      .then((res) => setCategories(res.data.categories || []))
+      .catch(console.error);
+  }, []);
 
   const ch = (e) => {
     const { name, value, type, checked } = e.target;
@@ -295,9 +303,11 @@ export default function AddDrama() {
               <label className="form-label"><Layers size={14} style={{ marginRight: 4 }} />Category</label>
               <select className="form-input-styled" name="category" onChange={ch} value={form.category}>
                 <option value="">Select Category</option>
-                <option value="trending">Trending</option>
-                <option value="top10">Top 10</option>
-                <option value="recommended">Recommended</option>
+                {categories.map((cat) => (
+                  <option key={cat._id} value={cat.slug}>
+                    {cat.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="form-row">

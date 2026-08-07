@@ -22,7 +22,9 @@ const {
 const {
     getAllUsers,
     getSingleUser,
+    deleteAllUsers,
     deleteUser,
+    toggleBlockUser,
     getRegistrationStats,
     getUserGrowth,
 } = require("../../controllers/admin/user.controller");
@@ -86,6 +88,20 @@ router.get(
     "/:id",
     isAdmin, hasPermission("users"),
     getSingleUser
+);
+
+// Delete all users
+router.delete(
+    "/delete-all",
+    isAdmin, hasPermission("users"),
+    deleteAllUsers
+);
+
+// Toggle block user
+router.patch(
+    "/:id/block",
+    isAdmin, hasPermission("users"),
+    toggleBlockUser
 );
 
 // Delete user
