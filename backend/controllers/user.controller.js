@@ -1,5 +1,19 @@
 const User = require("../models/user.model");
 
+const formatIndianPhone = (phone) => {
+  const cleaned = String(phone).replace(/\D/g, "");
+
+  if (cleaned.length === 10) {
+    return "+91" + cleaned;
+  }
+
+  if (cleaned.length === 12 && cleaned.startsWith("91")) {
+    return "+" + cleaned;
+  }
+
+  return phone;
+};
+
 
 // ========================================
 // GET PROFILE
@@ -50,6 +64,7 @@ exports.completeProfile = async (
     const {
       name,
       email,
+      phone,
     } = req.body;
 
     const user = await User.findById(
@@ -92,6 +107,28 @@ exports.completeProfile = async (
             "Email already in use",
         });
       }
+    }
+
+    // prevent duplicate phone
+    if (phone) {
+      const normalizedPhone = formatIndianPhone(phone);
+      const existingPhone =
+        await User.findOne({
+          phone: normalizedPhone,
+        });
+
+      if (
+        existingPhone &&
+        existingPhone._id.toString() !==
+          user._id.toString()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Phone number already in use",
+        });
+      }
+      user.phone = normalizedPhone;
     }
 
     // update fields
@@ -147,6 +184,7 @@ exports.updateProfile = async (
     const {
       name,
       email,
+      phone,
     } = req.body;
 
     const user = await User.findById(
@@ -178,6 +216,28 @@ exports.updateProfile = async (
             "Email already in use",
         });
       }
+    }
+
+    // duplicate phone check
+    if (phone) {
+      const normalizedPhone = formatIndianPhone(phone);
+      const existingPhone =
+        await User.findOne({
+          phone: normalizedPhone,
+        });
+
+      if (
+        existingPhone &&
+        existingPhone._id.toString() !==
+          user._id.toString()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Phone number already in use",
+        });
+      }
+      user.phone = normalizedPhone;
     }
 
     // update fields

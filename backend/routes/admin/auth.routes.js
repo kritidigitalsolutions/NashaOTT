@@ -212,8 +212,23 @@ router.get(
   getBunnyUploadConfig
 );
 
+// Backward-compatible alias for older frontend versions
+router.get(
+  "/bunny_config",
+  isAdmin,
+  getBunnyUploadConfig
+);
+
 router.post(
   "/bunny-upload",
+  isAdmin,
+  handleBunnyUpload,
+  createBunnyUpload
+);
+
+// Backward-compatible alias for older frontend versions
+router.post(
+  "/bunny_upload",
   isAdmin,
   handleBunnyUpload,
   createBunnyUpload
