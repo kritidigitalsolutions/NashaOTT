@@ -15,6 +15,19 @@ const {
   saveFcmToken,
 } = require("../../controllers/user.controller");
 
+// Multer error-catching wrapper
+const handleUpload = (req, res, next) => {
+  upload.single("profileImage")(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message || "File upload failed",
+      });
+    }
+    next();
+  });
+};
+
 
 // ========================================
 // GET USER PROFILE
@@ -38,7 +51,7 @@ router.get(
 router.post(
   "/complete-profile",
   isAuth,
-  upload.single("profileImage"),
+  handleUpload,
   completeProfile
 );
 
@@ -49,7 +62,7 @@ router.post(
 router.patch(
   "/update-profile",
   isAuth,
-  upload.single("profileImage"),
+  handleUpload,
   updateProfile
 );
 

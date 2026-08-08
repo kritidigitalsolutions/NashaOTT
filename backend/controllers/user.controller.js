@@ -67,9 +67,7 @@ exports.completeProfile = async (
       phone,
     } = req.body;
 
-    const user = await User.findById(
-      req.user.id
-    );
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -84,87 +82,61 @@ exports.completeProfile = async (
     if (user.profileComplete) {
       return res.status(400).json({
         success: false,
-        message:
-          "Profile already completed. Use update-profile API.",
+        message: "Profile already completed. Use update-profile API.",
       });
     }
 
+    const updateFields = { profileComplete: true };
+
     // prevent duplicate email
     if (email) {
-      const existingEmail =
-        await User.findOne({
-          email,
-        });
-
-      if (
-        existingEmail &&
-        existingEmail._id.toString() !==
-          user._id.toString()
-      ) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const existingEmail = await User.findOne({ email: normalizedEmail });
+      if (existingEmail && existingEmail._id.toString() !== user._id.toString()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Email already in use",
+          message: "Email already in use",
         });
       }
+      updateFields.email = normalizedEmail;
     }
 
     // prevent duplicate phone
     if (phone) {
       const normalizedPhone = formatIndianPhone(phone);
-      const existingPhone =
-        await User.findOne({
-          phone: normalizedPhone,
-        });
-
-      if (
-        existingPhone &&
-        existingPhone._id.toString() !==
-          user._id.toString()
-      ) {
+      const existingPhone = await User.findOne({ phone: normalizedPhone });
+      if (existingPhone && existingPhone._id.toString() !== user._id.toString()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Phone number already in use",
+          message: "Phone number already in use",
         });
       }
-      user.phone = normalizedPhone;
+      updateFields.phone = normalizedPhone;
     }
 
-    // update fields
     if (name) {
-      user.name = name;
-    }
-
-    if (email) {
-      user.email = email
-        .trim()
-        .toLowerCase();
+      updateFields.name = name;
     }
 
     // handle profile image
     if (req.file) {
-      user.profileImage =
-        req.file.path.replace(/\\/g, "/");
+      updateFields.profileImage = req.file.path.replace(/\\/g, "/");
     }
 
-    user.profileComplete = true;
-
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateFields },
+      { returnDocument: 'after', runValidators: false }
+    ).select("-__v");
 
     res.status(200).json({
       success: true,
-      message:
-        "Profile completed successfully",
-      user,
+      message: "Profile completed successfully",
+      user: updatedUser,
     });
 
   } catch (error) {
-    console.error(
-      "Complete Profile Error:",
-      error
-    );
-
+    console.error("Complete Profile Error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",
@@ -187,9 +159,7 @@ exports.updateProfile = async (
       phone,
     } = req.body;
 
-    const user = await User.findById(
-      req.user.id
-    );
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({
@@ -198,79 +168,57 @@ exports.updateProfile = async (
       });
     }
 
+    // Build the fields to update
+    const updateFields = {};
+
     // duplicate email check
     if (email) {
-      const existingEmail =
-        await User.findOne({
-          email,
-        });
-
-      if (
-        existingEmail &&
-        existingEmail._id.toString() !==
-          user._id.toString()
-      ) {
+      const existingEmail = await User.findOne({ email: email.trim().toLowerCase() });
+      if (existingEmail && existingEmail._id.toString() !== user._id.toString()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Email already in use",
+          message: "Email already in use",
         });
       }
+      updateFields.email = email.trim().toLowerCase();
     }
 
     // duplicate phone check
     if (phone) {
       const normalizedPhone = formatIndianPhone(phone);
-      const existingPhone =
-        await User.findOne({
-          phone: normalizedPhone,
-        });
-
-      if (
-        existingPhone &&
-        existingPhone._id.toString() !==
-          user._id.toString()
-      ) {
+      const existingPhone = await User.findOne({ phone: normalizedPhone });
+      if (existingPhone && existingPhone._id.toString() !== user._id.toString()) {
         return res.status(400).json({
           success: false,
-          message:
-            "Phone number already in use",
+          message: "Phone number already in use",
         });
       }
-      user.phone = normalizedPhone;
+      updateFields.phone = normalizedPhone;
     }
 
-    // update fields
     if (name) {
-      user.name = name;
-    }
-
-    if (email) {
-      user.email = email
-        .trim()
-        .toLowerCase();
+      updateFields.name = name;
     }
 
     // handle profile image
     if (req.file) {
-      user.profileImage = req.file.path.replace(/\\/g, "/");
+      updateFields.profileImage = req.file.path.replace(/\\/g, "/");
     }
 
-    await user.save();
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateFields },
+      { returnDocument: 'after', runValidators: false }
+    ).select("-__v");
 
     res.status(200).json({
       success: true,
-      message:
-        "Profile updated successfully",
-      user,
+      message: "Profile updated successfully",
+      user: updatedUser,
     });
 
   } catch (error) {
-    console.error(
-      "Update Profile Error:",
-      error
-    );
-
+    console.error("Update Profile Error:", error);
     res.status(500).json({
       success: false,
       message: "Server error",

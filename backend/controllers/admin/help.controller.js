@@ -44,7 +44,7 @@ exports.updateHelp = async (req, res) => {
     const help = await Help.findByIdAndUpdate(
       req.params.id,
       req.body,
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     res.status(200).json({
