@@ -34,12 +34,17 @@ exports.sendNotification = async (req, res) => {
     let resolvedImageUrl = (imageUrl && String(imageUrl).trim()) ? String(imageUrl).trim() : null;
 
     // Build metadata
-    const metadata = {};
+    const metadata = {
+      attachmentType: attachmentType || (planId ? "plan" : (contentId ? "content" : "none"))
+    };
 
-    // Resolve content metadata whenever contentId & contentType are present,
-    // regardless of attachmentType (the admin panel sometimes sends
-    // attachmentType:"none" even when a content item is selected).
-    if (contentId && contentType) {
+    const validContentTypes = ["movie", "series", "shortdrama"];
+
+    if (contentType === "plan" && contentId && !planId) {
+      planId = contentId;
+    }
+
+    if (contentId && contentType && validContentTypes.includes(contentType)) {
       metadata.contentId = contentId;
       metadata.contentType = contentType;
 

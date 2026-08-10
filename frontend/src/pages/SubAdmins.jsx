@@ -27,7 +27,7 @@ const MODULE_GROUPS = [
       { id: "series", title: "Web Series & Episodes", availableActions: ["view", "create", "edit", "delete"] },
       { id: "shortdrama", title: "Short Dramas", availableActions: ["view", "create", "edit", "delete"] },
       { id: "categories", title: "Categories", availableActions: ["view", "create", "edit", "delete"] },
-      { id: "ratings", title: "Ratings & Reviews", availableActions: ["view", "delete"] },
+      // { id: "ratings", title: "Ratings & Reviews", availableActions: ["view", "delete"] },
     ],
   },
   {
@@ -457,9 +457,9 @@ export default function SubAdmins() {
             Loading staff accounts...
           </div>
         ) : filteredSubAdmins.length === 0 ? (
-          <div style={{ padding: "48px 0", textAlign: "center", color: "#64748b" }}>
+          <div className="subadmins-empty-state">
             <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🛡️</div>
-            <h3 style={{ fontSize: "1.1rem", color: "#cbd5e1", margin: "0 0 4px" }}>No staff accounts found</h3>
+            <h3 className="subadmins-empty-title">No staff accounts found</h3>
             <p style={{ fontSize: "0.88rem", margin: 0 }}>Create your first sub-admin with exact module controls.</p>
           </div>
         ) : (
@@ -743,7 +743,7 @@ export default function SubAdmins() {
                               const allChecked = isAllActionsSelected(mod);
                               return (
                                 <tr key={mod.id} className="module-row">
-                                  <td style={{ fontWeight: 600, color: "#f8fafc" }}>{mod.title}</td>
+                                  <td className="module-title-cell">{mod.title}</td>
 
                                   {/* VIEW Column */}
                                   <td className="text-center">

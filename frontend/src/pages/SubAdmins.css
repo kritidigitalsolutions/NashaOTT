@@ -708,3 +708,323 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.module-title-cell {
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.subadmins-empty-state {
+  padding: 48px 0;
+  text-align: center;
+  color: #64748b;
+}
+
+.subadmins-empty-title {
+  font-size: 1.1rem;
+  color: #cbd5e1;
+  margin: 0 0 4px;
+}
+
+/* ============================================================
+   LIGHT MODE / BRIGHT MODE OVERRIDES FOR SUB-ADMINS PAGE
+   ============================================================ */
+
+body.light .subadmins-page {
+  color: #1e293b;
+}
+
+/* Header */
+body.light .subadmins-header-left h1 {
+  background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+body.light .subadmins-header-left p {
+  color: #64748b;
+}
+
+/* Stat Cards */
+body.light .subadmin-stat-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+body.light .subadmin-stat-card:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 6px 24px rgba(168, 85, 247, 0.12);
+}
+
+body.light .subadmin-stat-info h3 {
+  color: #0f172a;
+}
+
+body.light .subadmin-stat-info span {
+  color: #64748b;
+}
+
+/* Table Card */
+body.light .subadmins-table-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+body.light .subadmins-empty-title {
+  color: #0f172a;
+}
+
+/* Search input */
+body.light .search-input-wrapper input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .search-input-wrapper input:focus {
+  background: #ffffff;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+
+body.light .search-icon {
+  color: #94a3b8;
+}
+
+/* Table & Headers */
+body.light .subadmins-table th {
+  background: #f1f5f9;
+  color: #475569;
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .subadmins-table td {
+  border-bottom-color: #f1f5f9;
+  color: #334155;
+}
+
+body.light .subadmins-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+body.light .staff-name-wrap h4 {
+  color: #0f172a;
+}
+
+body.light .staff-name-wrap span {
+  color: #64748b;
+}
+
+/* Role Badges */
+body.light .role-badge.superadmin {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+body.light .role-badge.subadmin {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border-color: #e9d5ff;
+}
+
+/* Permission Pills */
+body.light .perm-pill {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+body.light .perm-pill.all {
+  background: #d1fae5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+/* Status Pills */
+body.light .status-pill.active {
+  background: #d1fae5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+body.light .status-pill.disabled {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Action buttons */
+body.light .btn-action {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+body.light .btn-action:hover {
+  background: #a855f7;
+  color: #ffffff;
+  border-color: #a855f7;
+}
+
+body.light .btn-action.delete:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* Modal Overlay & Card */
+body.light .modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+body.light .subadmin-modal-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+
+body.light .modal-header {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .modal-header-titles h2 {
+  color: #0f172a;
+}
+
+body.light .modal-header-titles p {
+  color: #64748b;
+}
+
+body.light .btn-modal-close {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+body.light .btn-modal-close:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Form Groups in Modal */
+body.light .form-group label {
+  color: #334155;
+}
+
+body.light .form-group input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .form-group input:focus {
+  background: #ffffff;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
+}
+
+body.light .password-visibility-toggle {
+  color: #64748b;
+}
+
+body.light .password-visibility-toggle:hover {
+  color: #7e22ce;
+  background: #f3e8ff;
+}
+
+body.light .status-toggle-row {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Matrix Section */
+body.light .matrix-section-header h3 {
+  color: #0f172a;
+}
+
+body.light .matrix-search-box input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .matrix-search-box svg {
+  color: #94a3b8;
+}
+
+body.light .btn-grant-all {
+  background: #d1fae5;
+  color: #059669;
+  border-color: #a7f3d0;
+}
+
+body.light .btn-grant-all:hover {
+  background: #10b981;
+  color: #ffffff;
+}
+
+body.light .btn-clear-all {
+  background: #f1f5f9;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+body.light .btn-clear-all:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+
+/* Matrix Table */
+body.light .matrix-table-wrapper {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+body.light .matrix-table th {
+  background: #f1f5f9;
+  color: #475569;
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .matrix-table td {
+  border-bottom-color: #f1f5f9;
+  color: #334155;
+}
+
+body.light .category-header-row td {
+  background: #faf5ff;
+  color: #7e22ce;
+  border-bottom-color: #f3e8ff;
+}
+
+body.light .module-title-cell {
+  color: #0f172a;
+}
+
+body.light .matrix-table tbody tr.module-row:hover {
+  background: #f8fafc;
+}
+
+body.light .perm-disabled-dash {
+  color: #cbd5e1;
+}
+
+body.light .modal-footer {
+  background: #ffffff;
+  border-top-color: #e2e8f0;
+}
+
+body.light .btn-modal-cancel {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+body.light .btn-modal-cancel:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}

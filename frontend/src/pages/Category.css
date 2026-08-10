@@ -660,3 +660,195 @@
   .cat-table td:nth-child(6) { display: none; }
   .cat-toolbar { flex-direction: column; align-items: stretch; }
 }
+
+/* ============================================================
+   LIGHT MODE OVERRIDES FOR CATEGORIES PAGE & MODAL
+   ============================================================ */
+
+/* ── Modal Overlay & Box ── */
+body.light .cat-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+body.light .cat-modal-box {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+}
+
+body.light .cat-modal-header {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .cat-modal-header h3 {
+  color: #0f172a;
+}
+
+body.light .cat-modal-header p {
+  color: #64748b;
+}
+
+body.light .cat-modal-close {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #64748b;
+}
+
+body.light .cat-modal-close:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+/* ── Modal Form Fields ── */
+body.light .cat-field-label {
+  color: #475569;
+}
+
+body.light .cat-field-input {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+body.light .cat-field-input:focus {
+  background: #ffffff;
+  border-color: var(--primary, #d4af37);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+body.light .cat-field-input::placeholder {
+  color: #94a3b8;
+}
+
+body.light .cat-field-hint {
+  color: #64748b;
+}
+
+/* ── Active Toggle Box ── */
+body.light .cat-active-toggle {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+body.light .cat-active-toggle:hover {
+  background: #f1f5f9;
+  border-color: rgba(212, 175, 55, 0.4);
+}
+
+body.light .cat-active-toggle-title {
+  color: #0f172a;
+}
+
+body.light .cat-active-toggle-sub {
+  color: #64748b;
+}
+
+body.light .cat-switch {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+body.light .cat-switch::after {
+  background: #94a3b8;
+}
+
+body.light .cat-switch.on {
+  background: rgba(6, 214, 160, 0.2);
+  border-color: rgba(6, 214, 160, 0.4);
+}
+
+body.light .cat-switch.on::after {
+  background: #059669;
+}
+
+/* ── Modal Footer ── */
+body.light .cat-modal-footer {
+  border-top-color: #e2e8f0;
+  background: #ffffff;
+}
+
+/* ── Delete Modal Warnings ── */
+body.light .cat-delete-warning-box {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+body.light .cat-delete-text p {
+  color: #475569;
+}
+
+body.light .cat-delete-text strong {
+  color: #0f172a;
+}
+
+/* ── Category Page Stats & Table Light Overrides ── */
+body.light .cat-stat-pill {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+body.light .cat-stat-num {
+  color: #0f172a;
+}
+
+body.light .cat-stat-label {
+  color: #64748b;
+}
+
+body.light .cat-filter-tabs {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+body.light .cat-filter-tab {
+  color: #64748b;
+}
+
+body.light .cat-filter-tab:hover {
+  color: #0f172a;
+}
+
+body.light .cat-table-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+body.light .cat-table thead tr {
+  background: #f8fafc;
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .cat-table th {
+  color: #475569;
+}
+
+body.light .cat-row {
+  border-bottom-color: #f1f5f9;
+}
+
+body.light .cat-row:hover {
+  background: #f8fafc;
+}
+
+body.light .cat-table td {
+  color: #1e293b;
+}
+
+body.light .cat-slug {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+body.light .cat-nudge {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+}
+
+body.light .cat-nudge:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #050505;
+}
