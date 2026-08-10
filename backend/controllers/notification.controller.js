@@ -12,25 +12,28 @@ const getMyNotifications = async (req, res) => {
         // req.user.id comes from JWT (not _id)
         const userId = new mongoose.Types.ObjectId(req.user.id);
 
-        // Fetch userType from DB since JWT doesn't include it
-        const user = await User.findById(userId).select('userType');
+        // Fetch userType and createdAt from DB since JWT doesn't include them
+        const user = await User.findById(userId).select('userType createdAt');
         const userType = user?.userType || 'INDIVIDUAL';
+        const userCreatedAt = user?.createdAt || new Date(0);
         const activeSubscription = await Subscription.exists({
             user: userId,
             status: "active",
             endDate: { $gte: new Date() }
         });
 
+        // Broadcast notifications must be created at or after user registration
         const targetConditions = [
             { targetUser: userId },
-            { targetUser: null, targetUserType: "ALL" },
-            { targetUser: null, targetUserType: userType }
+            { targetUser: null, targetUserType: "ALL", createdAt: { $gte: userCreatedAt } },
+            { targetUser: null, targetUserType: userType, createdAt: { $gte: userCreatedAt } }
         ];
 
         if (activeSubscription) {
             targetConditions.push({
                 targetUser: null,
-                targetUserType: "SUBSCRIBERS"
+                targetUserType: "SUBSCRIBERS",
+                createdAt: { $gte: userCreatedAt }
             });
         }
 
@@ -128,8 +131,9 @@ const getMyNotifications = async (req, res) => {
 const getUnreadCount = async (req, res) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user.id);
-        const user = await User.findById(userId).select('userType');
+        const user = await User.findById(userId).select('userType createdAt');
         const userType = user?.userType || 'INDIVIDUAL';
+        const userCreatedAt = user?.createdAt || new Date(0);
         const activeSubscription = await Subscription.exists({
             user: userId,
             status: "active",
@@ -138,14 +142,15 @@ const getUnreadCount = async (req, res) => {
 
         const targetConditions = [
             { targetUser: userId },
-            { targetUser: null, targetUserType: "ALL" },
-            { targetUser: null, targetUserType: userType }
+            { targetUser: null, targetUserType: "ALL", createdAt: { $gte: userCreatedAt } },
+            { targetUser: null, targetUserType: userType, createdAt: { $gte: userCreatedAt } }
         ];
 
         if (activeSubscription) {
             targetConditions.push({
                 targetUser: null,
-                targetUserType: "SUBSCRIBERS"
+                targetUserType: "SUBSCRIBERS",
+                createdAt: { $gte: userCreatedAt }
             });
         }
 
@@ -256,8 +261,9 @@ const markAsRead = async (req, res) => {
 const markAllAsRead = async (req, res) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user.id);
-        const user = await User.findById(userId).select('userType');
+        const user = await User.findById(userId).select('userType createdAt');
         const userType = user?.userType || 'INDIVIDUAL';
+        const userCreatedAt = user?.createdAt || new Date(0);
         const activeSubscription = await Subscription.exists({
             user: userId,
             status: "active",
@@ -265,13 +271,14 @@ const markAllAsRead = async (req, res) => {
         });
 
         const broadcastTargetConditions = [
-            { targetUserType: "ALL" },
-            { targetUserType: userType }
+            { targetUserType: "ALL", createdAt: { $gte: userCreatedAt } },
+            { targetUserType: userType, createdAt: { $gte: userCreatedAt } }
         ];
 
         if (activeSubscription) {
             broadcastTargetConditions.push({
-                targetUserType: "SUBSCRIBERS"
+                targetUserType: "SUBSCRIBERS",
+                createdAt: { $gte: userCreatedAt }
             });
         }
 
