@@ -131,9 +131,11 @@ app.use("/api/admin/content", updateUpcomingStatus, contentAdminRoutes);
 
 const adminCategoryRoutes = require("./routes/admin/category.routes");
 const userCategoryRoutes = require("./routes/user/category.routes");
+const adminWebpageRoutes = require("./routes/admin/webpage.routes");
 
 app.use("/api/admin/categories", adminCategoryRoutes);
 app.use("/api/categories", userCategoryRoutes);
+app.use("/api/admin/webpage", adminWebpageRoutes);
 
 // app.use(
 //   "/api/admin/drama-episodes",
@@ -162,6 +164,9 @@ app.use("/api/user", userRoutes);
 app.use("/api/movies", updateUpcomingStatus, movieUserRoutes);
 app.use("/api/series", updateUpcomingStatus, seriesUserRoutes);
 app.use("/api/content", updateUpcomingStatus, contentUserRoutes);
+
+const userWebpageRoutes = require("./routes/user/webpage.routes");
+app.use("/api/webpage", userWebpageRoutes);
 
 //legal routes for admin
 const adminLegal = require("./routes/admin/legal.routes");

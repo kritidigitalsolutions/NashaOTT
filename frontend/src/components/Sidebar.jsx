@@ -2,7 +2,9 @@ import "./Sidebar.css";
 import { NavLink } from "react-router-dom";
 import Logo from "./Logo";
 // import { BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut } from "lucide-react";
-import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Layers, Building2, ShieldCheck } from "lucide-react";
+// import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, Layers, Building2, ShieldCheck } from "lucide-react";
+import { X, BarChart3, Users, Plus, Film, FileText, HelpCircle, CreditCard, Settings, LogOut, Star, Bell, MessageSquare, Clapperboard, ShieldCheck, Tags, LayoutGrid, Layers, Building2 } from "lucide-react";
+
 //new things
 const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#d4af37" },
@@ -11,6 +13,7 @@ const NAV = [
   { id: "add-content", label: "Add Content", icon: Plus, color: "#06d6a0" },
   { id: "content", label: "Content Library", icon: Film, color: "#d4af37" },
   { id: "categories", label: "Categories", icon: Layers, color: "#06d6a0" },
+ { id: "webpage", label: "Webpage Layout", icon: LayoutGrid, color: "#ff8c00", permissionId: "content" },
   // { id: "ratings", label: "Ratings", icon: Star, color: "#ffb703" },
   { id: "pricing", label: "Subscribed Users", icon: CreditCard, color: "#8338ec" },
   { id: "plans", label: "Subscription Plans", icon: CreditCard, color: "#8338ec" },
@@ -66,6 +69,7 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
             "add-content": ["movies", "series", "content"],
             "content": ["movies", "series", "content"],
             "categories": "categories",
+            "webpage": ["webpage", "content"],
             // "ratings": "ratings",
             "pricing": "pricing",
             "plans": "plans",

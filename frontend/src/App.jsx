@@ -27,6 +27,7 @@ const AddDramaPage = lazy(() => import("./pages/AddDrama"));
 const CategoryPage = lazy(() => import("./pages/Category"));
 const CompanyInfoPage = lazy(() => import("./pages/CompanyInfo"));
 const SubAdminsPage = lazy(() => import("./pages/SubAdmins"));
+const WebpageLayout = lazy(() => import("./pages/WebpageLayout"));
 
 // ── Toast Context ──
 const ToastContext = createContext();
@@ -116,6 +117,7 @@ function App() {
             <Route path="categories" element={<CategoryPage />} />
             <Route path="company-info" element={<CompanyInfoPage />} />
             <Route path="subadmins" element={<SubAdminsPage />} />
+            <Route path="webpage" element={<WebpageLayout />} />
           </Route>
         </Routes>
       </Suspense>

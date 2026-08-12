@@ -49,6 +49,7 @@ const MODULE_GROUPS = [
   {
     category: "Platform & Legal Settings",
     modules: [
+      { id: "webpage", title: "Webpage Layout Manager", availableActions: ["view", "edit"] },
       { id: "legal", title: "Legal Pages", availableActions: ["view", "edit"] },
       { id: "help", title: "Help Center & FAQ", availableActions: ["view", "create", "edit", "delete"] },
       { id: "settings", title: "Platform & CDN Settings", availableActions: ["view", "edit"] },
