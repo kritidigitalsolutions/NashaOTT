@@ -10,24 +10,28 @@ const Notification = require("../../models/notification.model");
 const PaymentTransaction = require("../../models/paymentTransaction.model");
 const Movie = require("../../models/movie.model");
 const Series = require("../../models/series.model");
+const UserOTP = require("../../models/user.otp.model");
 
 
 // ========================================
 // CASCADE DELETION HELPER
 // ========================================
-const performCascadeDeleteForUsers = async (userIds) => {
+const performCascadeDeleteForUsers = async (userIds, userPhones = []) => {
     if (!Array.isArray(userIds) || userIds.length === 0) return;
 
     try {
-        // 1. Find support tickets, then delete their support messages
+        // 1. Find support tickets, then delete their support messages + messages sent by the user
         const tickets = await SupportTicket.find({ user: { $in: userIds } }).select("_id").lean();
         const ticketIds = tickets.map(t => t._id);
-        if (ticketIds.length > 0) {
-            await SupportMessage.deleteMany({ ticket: { $in: ticketIds } });
-        }
-        await SupportTicket.deleteMany({ user: { $in: userIds } });
 
-        // 2. Delete Watchlists, Subscriptions, Payments, Ratings, Interactions, target notifications
+        await Promise.all([
+            ticketIds.length > 0 ? SupportMessage.deleteMany({ ticket: { $in: ticketIds } }) : Promise.resolve(),
+            SupportMessage.deleteMany({ senderId: { $in: userIds } }),
+            SupportTicket.deleteMany({ user: { $in: userIds } }),
+        ]);
+
+        // 2. Delete Watchlists, Subscriptions, Payment Transactions, Ratings, Interactions, target Notifications, and User OTPs
+        const phoneList = Array.isArray(userPhones) ? userPhones.filter(Boolean) : [];
         await Promise.all([
             Watchlist.deleteMany({ user: { $in: userIds } }),
             Subscription.deleteMany({ user: { $in: userIds } }),
@@ -35,6 +39,7 @@ const performCascadeDeleteForUsers = async (userIds) => {
             Rating.deleteMany({ user: { $in: userIds } }),
             Interaction.deleteMany({ user: { $in: userIds } }),
             Notification.deleteMany({ targetUser: { $in: userIds } }),
+            phoneList.length > 0 ? UserOTP.deleteMany({ phone: { $in: phoneList } }) : Promise.resolve(),
         ]);
 
         // 3. Release/Reset Vouchers used by these users
@@ -181,10 +186,11 @@ exports.getSingleUser = async (
 // ========================================
 exports.deleteAllUsers = async (req, res) => {
     try {
-        const allUsers = await User.find({}).select("_id").lean();
+        const allUsers = await User.find({}).select("_id phone").lean();
         const allUserIds = allUsers.map(u => u._id);
+        const allPhones = allUsers.map(u => u.phone).filter(Boolean);
 
-        await performCascadeDeleteForUsers(allUserIds);
+        await performCascadeDeleteForUsers(allUserIds, allPhones);
         await User.deleteMany({});
 
         res.status(200).json({
@@ -251,7 +257,7 @@ exports.deleteUser = async (
             });
         }
 
-        await performCascadeDeleteForUsers([req.params.id]);
+        await performCascadeDeleteForUsers([req.params.id], user.phone ? [user.phone] : []);
         await User.findByIdAndDelete(
             req.params.id
         );
