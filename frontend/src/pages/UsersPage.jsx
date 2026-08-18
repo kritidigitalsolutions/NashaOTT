@@ -3,6 +3,7 @@ import API, { API_BASE_URL } from "../api/axios";
 import { Users, RefreshCw, User, CheckCircle, AlertCircle, Search, Loader, Eye, Trash2, X, UserX, ShieldAlert } from "lucide-react";
 import "./Dashboard.css";
 import "./Notifications.css";
+import "./UsersPage.css";
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
