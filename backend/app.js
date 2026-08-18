@@ -90,7 +90,11 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Serve uploads folder locally

@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { sabpaisaClient, generateChecksum, SABPAISA_MERCHANT_ID } = require('../config/sabpaisa');
+const { sabpaisaClient, generateChecksum, SABPAISA_MERCHANT_ID } = require('../config/sabPaisa');
 const Plan = require('../models/plan.model');
 const Promo = require('../models/promocode.model');
 const Subscription = require('../models/subscription.model');
