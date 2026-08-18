@@ -164,54 +164,21 @@ exports.getIncomeStats =
       // auto cleanup
       await expireOldSubscriptions();
 
+      const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
       const now = new Date();
+      const istNow = new Date(now.getTime() + IST_OFFSET_MS);
 
-      const startOfToday =
-        new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate()
-        );
+      const year = istNow.getUTCFullYear();
+      const month = istNow.getUTCMonth();
+      const date = istNow.getUTCDate();
+      const dayOfWeek = istNow.getUTCDay();
 
-      const startOfTomorrow =
-        new Date(startOfToday);
-
-      startOfTomorrow.setDate(
-        startOfTomorrow.getDate() + 1
-      );
-
-      const startOfYesterday =
-        new Date(startOfToday);
-
-      startOfYesterday.setDate(
-        startOfYesterday.getDate() -
-          1
-      );
-
-      const startOfWeek =
-        new Date(startOfToday);
-
-      const dayOfWeek =
-        startOfToday.getDay();
-
-      startOfWeek.setDate(
-        startOfWeek.getDate() -
-          dayOfWeek
-      );
-
-      const startOfMonth =
-        new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          1
-        );
-
-      const startOfYear =
-        new Date(
-          now.getFullYear(),
-          0,
-          1
-        );
+      const startOfToday = new Date(Date.UTC(year, month, date, 0, 0, 0, 0) - IST_OFFSET_MS);
+      const startOfTomorrow = new Date(Date.UTC(year, month, date + 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+      const startOfYesterday = new Date(Date.UTC(year, month, date - 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+      const startOfWeek = new Date(Date.UTC(year, month, date - dayOfWeek, 0, 0, 0, 0) - IST_OFFSET_MS);
+      const startOfMonth = new Date(Date.UTC(year, month, 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+      const startOfYear = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0) - IST_OFFSET_MS);
 
       const sumAmount =
         async (match) => {

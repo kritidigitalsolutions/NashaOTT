@@ -277,16 +277,22 @@ exports.deleteUser = async (
 
 exports.getRegistrationStats = async (req, res) => {
     try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+        const now = new Date();
+        const istNow = new Date(now.getTime() + IST_OFFSET_MS);
 
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
+        const year = istNow.getUTCFullYear();
+        const month = istNow.getUTCMonth();
+        const date = istNow.getUTCDate();
 
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0);
+        // Start of Today in IST (converted to UTC Date for MongoDB matching)
+        const today = new Date(Date.UTC(year, month, date, 0, 0, 0, 0) - IST_OFFSET_MS);
+
+        // Start of Tomorrow in IST
+        const tomorrow = new Date(Date.UTC(year, month, date + 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+
+        // Start of Yesterday in IST
+        const yesterday = new Date(Date.UTC(year, month, date - 1, 0, 0, 0, 0) - IST_OFFSET_MS);
 
         const [todayCount, yesterdayCount, totalCount] = await Promise.all([
             User.countDocuments({ createdAt: { $gte: today, $lt: tomorrow } }),
@@ -316,22 +322,28 @@ exports.getUserGrowth = async (req, res) => {
     try {
         const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const growthData = [];
+        const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+        const now = new Date();
+        const istNow = new Date(now.getTime() + IST_OFFSET_MS);
+
+        const curYear = istNow.getUTCFullYear();
+        const curMonth = istNow.getUTCMonth();
+        const curDate = istNow.getUTCDate();
 
         // Loop for the last 7 days
         for (let i = 6; i >= 0; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
-            d.setHours(0, 0, 0, 0);
+            const startOfDay = new Date(Date.UTC(curYear, curMonth, curDate - i, 0, 0, 0, 0) - IST_OFFSET_MS);
+            const endOfDay = new Date(Date.UTC(curYear, curMonth, curDate - i + 1, 0, 0, 0, 0) - IST_OFFSET_MS);
 
-            const nextD = new Date(d);
-            nextD.setDate(nextD.getDate() + 1);
+            const istMidDay = new Date(Date.UTC(curYear, curMonth, curDate - i, 12, 0, 0, 0));
+            const dayName = daysOfWeek[istMidDay.getUTCDay()];
 
             const count = await User.countDocuments({
-                createdAt: { $gte: d, $lt: nextD },
+                createdAt: { $gte: startOfDay, $lt: endOfDay },
             });
 
             growthData.push({
-                day: daysOfWeek[d.getDay()],
+                day: dayName,
                 users: count,
             });
         }
