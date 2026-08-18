@@ -1,11 +1,12 @@
 const crypto = require('crypto');
-const { sabpaisaClient, generateChecksum, SABPAISA_MERCHANT_ID } = require('../config/sabPaisa');
+const { sabpaisaClient, generateChecksum, SABPAISA_MERCHANT_ID } = require('../config/sabpaisa');
 const Plan = require('../models/plan.model');
 const Promo = require('../models/promocode.model');
 const Subscription = require('../models/subscription.model');
 const User = require('../models/user.model');
 const PaymentTransaction = require('../models/paymentTransaction.model');
 const { expireSubscriptionIfNeeded } = require('../utils/subscription.helper');
+const { sendMetaEvent } = require('../services/metaCapi.service');
 
 const successfulStatuses = new Set(['SUCCESS', 'SUCCEEDED', 'PAID', 'COMPLETED', 'CAPTURED']);
 const failedStatuses = new Set(['FAILED', 'FAILURE', 'CANCELLED', 'CANCELED', 'EXPIRED']);
@@ -58,10 +59,61 @@ const activateSubscription = async (transaction, gatewayPayload = {}) => {
   return subscription;
 };
 
+// Atomic claim prevents duplicate Purchase events on webhook retries or
+// concurrent redelivery — only one caller can flip metaPurchaseSent false -> true.
+const triggerMetaPurchase = async (transaction) => {
+  const claimed = await PaymentTransaction.findOneAndUpdate(
+    { _id: transaction._id, metaPurchaseSent: false },
+    { $set: { metaPurchaseSent: true } },
+    { new: true }
+  );
+  if (!claimed) {
+    paymentLog('META_CAPI_ALREADY_SENT', { merchantTxnId: transaction.merchantTxnId });
+    return;
+  }
+
+  const populated = await PaymentTransaction.findById(claimed._id).populate('user').populate('plan');
+  const result = await sendMetaEvent({
+    eventName: 'Purchase',
+    eventId: populated.merchantTxnId,
+    eventSourceUrl: `${(process.env.FRONTEND_URL || '').split(',')[0]}/payment-result`,
+    actionSource: 'website',
+    userData: {
+      email: populated.user?.email,
+      phone: populated.user?.phone,
+      clientIpAddress: populated.clientIpAddress,
+      clientUserAgent: populated.clientUserAgent,
+      fbp: populated.fbp,
+      fbc: populated.fbc,
+    },
+    customData: {
+      currency: populated.currency,
+      value: populated.amount,
+      contentType: 'product',
+      contents: [{ id: String(populated.plan?._id), quantity: 1, item_price: populated.amount }],
+    },
+  });
+
+  if (result === null) {
+    // sendMetaEvent returns null both for missing config AND for network/API
+    // failures (see its catch block) — so this revert can't distinguish
+    // "never sent" from "sent but response handling failed." Reverting favors
+    // retry-ability over the (rare) risk of a duplicate Purchase on Meta's side.
+    await PaymentTransaction.updateOne({ _id: claimed._id }, { $set: { metaPurchaseSent: false } });
+    paymentLog('META_CAPI_REVERTED', { merchantTxnId: populated.merchantTxnId });
+  } else {
+    paymentLog('META_CAPI_SENT', { merchantTxnId: populated.merchantTxnId });
+  }
+};
+
 const createOrder = async (req, res) => {
   try {
-    const { planId, promoCode } = req.body;
-    paymentLog('CREATE_REQUEST_RECEIVED', { userId: req.user.id, planId, hasPromoCode: Boolean(promoCode) });
+    const { planId, promoCode, source = 'web', fbp, fbc } = req.body;
+    const clientIpAddress = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+    const clientUserAgent = req.headers['user-agent'] || null;
+    const allowedSources = ['web', 'android', 'ios', 'api'];
+    const normalizedSource = allowedSources.includes(source) ? source : 'web';
+    paymentLog('CREATE_REQUEST_RECEIVED', { userId: req.user.id, planId, hasPromoCode: Boolean(promoCode), source: normalizedSource });
     if (!planId) return res.status(400).json({ success: false, message: 'planId required' });
 
     const [plan, user] = await Promise.all([Plan.findById(planId), User.findById(req.user.id)]);
@@ -90,11 +142,6 @@ const createOrder = async (req, res) => {
     if (!process.env.SABPAISA_RETURN_URL && !backendUrl) throw new Error('Set BACKEND_URL or SABPAISA_RETURN_URL');
     if (!process.env.SABPAISA_WEBHOOK_URL && !backendUrl) throw new Error('Set BACKEND_URL or SABPAISA_WEBHOOK_URL');
 
-    let webhookUrl = process.env.SABPAISA_WEBHOOK_URL || `${backendUrl}/api/payment/webhook`;
-    if (/localhost|127\.0\.0\.1|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\./i.test(webhookUrl)) {
-      webhookUrl = 'https://nazarott.com/api/payment/webhook';
-    }
-
     const payload = {
       merchantId: SABPAISA_MERCHANT_ID,
       merchantTxnId,
@@ -106,7 +153,7 @@ const createOrder = async (req, res) => {
       customerEmail: user.email || 'noreply@mirchiott.com',
       customerPhone: user.phone || '9999999999',
       returnUrl: process.env.SABPAISA_RETURN_URL || `${backendUrl}/api/payment/return`,
-      webhookUrl,
+      webhookUrl: process.env.SABPAISA_WEBHOOK_URL || `${backendUrl}/api/payment/webhook`,
       notes: { planId, userId: req.user.id, promoCode: appliedPromo || '' },
     };
     paymentLog('SABPAISA_CREATE_REQUEST', { merchantTxnId, planId, amount: finalAmount, amountPaise, returnUrl: payload.returnUrl, webhookUrl: payload.webhookUrl });
@@ -119,13 +166,18 @@ const createOrder = async (req, res) => {
       paymentId: data.paymentId,
       user: req.user.id,
       plan: plan._id,
+      source: normalizedSource,
       promoCode: appliedPromo,
       amount: finalAmount,
       currency: 'INR',
+      clientIpAddress,
+      clientUserAgent,
+      fbp: fbp || null,
+      fbc: fbc || null,
     });
-    paymentLog('TRANSACTION_SAVED', { merchantTxnId, paymentId: data.paymentId, userId: req.user.id, planId, amount: finalAmount });
+    paymentLog('TRANSACTION_SAVED', { merchantTxnId, paymentId: data.paymentId, userId: req.user.id, planId, amount: finalAmount, source: normalizedSource });
     const checkoutUrl = data.clientSecret ? `${data.checkoutUrl}?clientSecret=${encodeURIComponent(data.clientSecret)}` : data.checkoutUrl;
-    return res.status(200).json({ success: true, checkoutUrl, paymentId: data.paymentId, merchantTxnId, amount: finalAmount });
+    return res.status(200).json({ success: true, checkoutUrl, paymentId: data.paymentId, merchantTxnId, amount: finalAmount, source: normalizedSource });
   } catch (err) {
     paymentLog('CREATE_FAILED', { message: err.message, gatewayError: err.response?.data });
     console.error('Create Order Error:', err.response?.data || err.message);
@@ -148,8 +200,8 @@ const verifyPayment = async (req, res) => {
       paymentLog('VERIFY_PENDING', { merchantTxnId, transactionStatus: transaction.status });
       return res.status(202).json({ success: false, message: 'Payment is awaiting SabPaisa confirmation' });
     }
-    paymentLog('VERIFY_SUCCESS', { merchantTxnId, subscriptionId: transaction.subscription?._id?.toString() || transaction.subscription?.toString() });
-    return res.json({ success: true, message: 'Payment verified', subscription: transaction.subscription });
+    paymentLog('VERIFY_SUCCESS', { merchantTxnId, subscriptionId: transaction.subscription?._id?.toString() || transaction.subscription?.toString(), source: transaction.source });
+    return res.json({ success: true, message: 'Payment verified', subscription: transaction.subscription, source: transaction.source });
   } catch (err) {
     paymentLog('VERIFY_FAILED', { message: err.message });
     console.error('Verify Payment Error:', err);
@@ -198,6 +250,11 @@ const sabPaisaWebhook = async (req, res) => {
     const normalizedStatus = String(status || '').toUpperCase().replace(/[.\- ]/g, '_');
     if (successfulStatuses.has(normalizedStatus) || normalizedStatus.endsWith('_SUCCESS') || normalizedStatus.endsWith('_SUCCEEDED')) {
       const subscription = await activateSubscription(transaction, req.body);
+      // Fire-and-forget: never awaited, so a slow/failing Meta API can't delay
+      // the webhook response or make SabPaisa retry-storm this endpoint.
+      triggerMetaPurchase(transaction).catch((err) =>
+        paymentLog('META_CAPI_DISPATCH_ERROR', { merchantTxnId: transaction.merchantTxnId, message: err.message })
+      );
       return res.status(200).json({ status: 'processed', subscriptionId: subscription._id });
     }
     // A gateway can send informational events before the final result. Keep

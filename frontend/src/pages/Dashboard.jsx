@@ -124,7 +124,32 @@ export default function Dashboard() {
     setLoading(false);
   }
 
-  useEffect(() => { fetchData(); }, []);
+  // Registration totals are calculated on the server using its current day.
+  // Refresh this independently so an open Dashboard rolls into the new day
+  // without requiring the admin to reload the page.
+  async function fetchRegistrationStats() {
+    try {
+      const response = await API.get("/admin/user/registration-stats");
+      if (response?.data) {
+        setRegistrationStats(response.data.data || {
+          todayRegistration: 0,
+          yesterdayRegistration: 0,
+          totalRegistration: 0,
+        });
+      }
+    } catch (err) {
+      console.log("Registration stats refresh error:", err);
+    }
+  }
+
+  useEffect(() => {
+    fetchData();
+
+    // Re-check the server's 12:00 AM–11:59:59 PM window every minute.
+    // This makes the card update within one minute of the server's new day.
+    const registrationRefresh = window.setInterval(fetchRegistrationStats, 60_000);
+    return () => window.clearInterval(registrationRefresh);
+  }, []);
 
   const formatCurrency = (value) =>
     `₹${Number(value || 0).toLocaleString("en-IN")}`;
