@@ -1,0 +1,145 @@
+/* =======================================================
+   SUBSCRIPTION PAGE LIGHT THEME STYLES
+   ======================================================= */
+
+body.light .subscription-page {
+  color: #1e293b;
+}
+
+body.light .subscription-header h2 {
+  color: #0f172a;
+}
+
+body.light .subscription-header p {
+  color: #64748b;
+}
+
+body.light .subscription-refresh {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+body.light .subscription-refresh:hover:not(:disabled) {
+  background: #e2e8f0;
+  border-color: #9333ea;
+  color: #7e22ce;
+}
+
+body.light .subscription-stat-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+body.light .subscription-stat-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+body.light .subscription-stat-card.active {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.08), #ffffff);
+  border-color: #a855f7;
+  box-shadow: 0 0 0 1px #a855f7, 0 8px 20px rgba(168, 85, 247, 0.12);
+}
+
+body.light .subscription-stat-title {
+  color: #64748b;
+}
+
+body.light .subscription-stat-badge {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+body.light .subscription-stat-amount {
+  color: #0f172a;
+}
+
+body.light .subscription-stat-users {
+  color: #64748b;
+}
+
+body.light .subscription-user-phone {
+  color: #64748b;
+}
+
+body.light .subscription-search,
+body.light .subscription-toolbar select {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+body.light .subscription-search input {
+  color: #1e293b;
+}
+
+body.light .subscription-search input::placeholder {
+  color: #94a3b8;
+}
+
+body.light .subscription-table-wrap {
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+
+body.light .subscription-table thead {
+  background: #f8fafc;
+}
+
+body.light .subscription-table th {
+  color: #475569;
+}
+
+body.light .subscription-table td {
+  border-top-color: #f1f5f9;
+  color: #334155;
+}
+
+body.light .subscription-table tbody tr:hover {
+  background: rgba(241, 245, 249, 0.7);
+}
+
+body.light .subscription-user {
+  color: #0f172a !important;
+}
+
+body.light .plan {
+  color: #7e22ce !important;
+}
+
+body.light .subscription-pagination {
+  color: #64748b;
+}
+
+body.light .subscription-pagination button {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+body.light .subscription-details-modal {
+  background: #ffffff;
+  border-color: #cbd5e1;
+}
+
+body.light .subscription-details-header {
+  border-bottom-color: #e2e8f0;
+}
+
+body.light .subscription-details-header h3 {
+  color: #0f172a;
+}
+
+body.light .subscription-details-content h4 {
+  color: #0f172a;
+}
+
+body.light .subscription-details-content dl div {
+  border-top-color: #e2e8f0;
+}
+
+body.light .subscription-details-content dd {
+  color: #1e293b;
+}

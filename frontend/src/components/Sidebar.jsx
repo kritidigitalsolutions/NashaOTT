@@ -10,12 +10,12 @@ const NAV = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, color: "#d4af37" },
   { id: "subadmins", label: "Sub-admins & Staff", icon: ShieldCheck, color: "#a855f7", requiresSuperAdmin: true },
   { id: "users", label: "Users", icon: Users, color: "#3a86ff" },
+    { id: "pricing", label: "Subscribed Users", icon: CreditCard, color: "#8338ec" },
   { id: "add-content", label: "Add Content", icon: Plus, color: "#06d6a0" },
   { id: "content", label: "Content Library", icon: Film, color: "#d4af37" },
   { id: "categories", label: "Categories", icon: Layers, color: "#06d6a0" },
  { id: "webpage", label: "Webpage Layout", icon: LayoutGrid, color: "#ff8c00", permissionId: "content" },
   // { id: "ratings", label: "Ratings", icon: Star, color: "#ffb703" },
-  { id: "pricing", label: "Subscribed Users", icon: CreditCard, color: "#8338ec" },
   { id: "plans", label: "Subscription Plans", icon: CreditCard, color: "#8338ec" },
   { id: "promo", label: "Promo & Voucher", icon: CreditCard, color: "#ffb703" },
 
