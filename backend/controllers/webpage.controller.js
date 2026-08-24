@@ -33,7 +33,7 @@ const populateConfig = async (config) => {
   const allMovieIds = [...new Set([...bannerMovieIds, ...secMovieIds])];
   const allSeriesIds = [...new Set([...bannerSeriesIds, ...secSeriesIds])];
 
-  const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide releaseDate priority rating videoUrl trailerUrl isPremium contentType";
+  const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate priority rating videoUrl trailerUrl isPremium contentType";
   const ADMIN_SELECT = "title poster banner isPremium isPublished isHide releaseDate priority rating is18Plus";
 
   const [movies, seriesList] = await Promise.all([
@@ -107,7 +107,7 @@ const populateConfigAdmin = async (config) => {
 // Helpers
 // ============================================================
 const isVisible = item =>
-  item && item.title && item.isPublished !== false && item.isHide !== true;
+  item && item.title && item.isPublished !== false && item.isHide !== true && item.is18Plus !== true;
 
 const attachEpisodesToSeries = async (heroBanners, sections) => {
   const seriesIds = [];
@@ -202,7 +202,7 @@ const getWebpageLayout = async (req, res) => {
     const allMovieIds = [...new Set([...bannerMovieIds, ...secMovieIds])];
     const allSeriesIds = [...new Set([...bannerSeriesIds, ...secSeriesIds])];
 
-    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide releaseDate priority rating videoUrl trailerUrl isPremium";
+    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate priority rating videoUrl trailerUrl isPremium";
 
     const [movies, seriesList] = await Promise.all([
       allMovieIds.length ? Movie.find({ _id: { $in: allMovieIds } }).select(SELECT).lean() : [],
@@ -277,7 +277,7 @@ const getHeroBanners = async (req, res) => {
       else if (b.contentType === "Series") seriesIds.push(b.contentId.toString());
     }
 
-    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide releaseDate rating videoUrl trailerUrl isPremium";
+    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate rating videoUrl trailerUrl isPremium";
 
     const [movies, seriesList] = await Promise.all([
       movieIds.length ? Movie.find({ _id: { $in: movieIds } }).select(SELECT).lean() : [],
@@ -329,7 +329,7 @@ const getSections = async (req, res) => {
       }
     }
 
-    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide releaseDate rating videoUrl trailerUrl isPremium";
+    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate rating videoUrl trailerUrl isPremium";
 
     const [movies, seriesList] = await Promise.all([
       movieIds.length ? Movie.find({ _id: { $in: [...new Set(movieIds)] } }).select(SELECT).lean() : [],
@@ -387,7 +387,7 @@ const getSectionBySlug = async (req, res) => {
       else if (item.contentType === "Series") seriesIds.push(item.contentId.toString());
     }
 
-    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide releaseDate rating videoUrl trailerUrl isPremium";
+    const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate rating videoUrl trailerUrl isPremium";
 
     const [movies, seriesList] = await Promise.all([
       movieIds.length ? Movie.find({ _id: { $in: movieIds } }).select(SELECT).lean() : [],
@@ -436,7 +436,7 @@ const getWebpageContentById = async (req, res) => {
     }
 
     if (!item) return res.status(404).json({ success: false, message: "Content not found." });
-    if (item.isPublished === false || item.isHide === true) {
+    if (item.isPublished === false || item.isHide === true || item.is18Plus === true) {
       return res.status(403).json({ success: false, message: "Content is not available." });
     }
 
