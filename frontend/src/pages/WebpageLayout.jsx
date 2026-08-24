@@ -41,13 +41,15 @@ export default function WebpageLayout() {
 
         if (configRes.data?.success && configRes.data?.config) {
           const cfg = configRes.data.config;
+          // Only keep banners/items where contentId was actually populated (has a title)
+          const isPopulated = (c) => c && typeof c === "object" && c.title;
           const cleanBanners = (cfg.heroBanners || []).filter(
-            b => b.contentId && b.contentId.is18Plus !== true
+            b => isPopulated(b.contentId) && b.contentId.is18Plus !== true
           );
           const cleanSections = (cfg.sections || []).map(s => ({
             ...s,
             items: (s.items || []).filter(
-              item => item.contentId && item.contentId.is18Plus !== true
+              item => isPopulated(item.contentId) && item.contentId.is18Plus !== true
             )
           }));
           setHeroBanners(cleanBanners);
@@ -182,8 +184,17 @@ export default function WebpageLayout() {
       if (res.data?.success) {
         showToast("Layout saved!", "success");
         if (res.data.config) {
-          setHeroBanners(res.data.config.heroBanners || []);
-          setSections(res.data.config.sections || []);
+          const cfg = res.data.config;
+          const isPopulated = (c) => c && typeof c === "object" && c.title;
+          setHeroBanners(
+            (cfg.heroBanners || []).filter(b => isPopulated(b.contentId) && b.contentId.is18Plus !== true)
+          );
+          setSections(
+            (cfg.sections || []).map(s => ({
+              ...s,
+              items: (s.items || []).filter(item => isPopulated(item.contentId) && item.contentId.is18Plus !== true)
+            }))
+          );
         }
       }
     } catch (err) {
@@ -355,7 +366,7 @@ export default function WebpageLayout() {
               <div className="wl-banner-grid">
                 {heroBanners.map((banner, idx) => {
                   const item = banner.contentId;
-                  if (!item) return null;
+                  if (!item || typeof item !== "object" || !item.title) return null;
                   return (
                     <div key={idx} className="wl-banner-card">
                       <div className="wl-banner-img" style={{ backgroundImage: `url(${imgUrl(item.banner || item.poster)})` }}>

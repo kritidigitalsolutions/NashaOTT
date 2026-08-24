@@ -35,9 +35,9 @@ const movieSchema = new mongoose.Schema(
     },
 
     genre: [{
-  type: String,
-  trim: true
-}],
+      type: String,
+      trim: true
+    }],
 
     releaseYear: Number,
 
@@ -78,14 +78,14 @@ const movieSchema = new mongoose.Schema(
       default: false
     },
     isHide: {
-    type: Boolean,
-    default: false
-},
+      type: Boolean,
+      default: false
+    },
     isPublished: {
-  type: Boolean,
-  default: false,
-  index: true,
-},
+      type: Boolean,
+      default: false,
+      index: true,
+    },
 
     rating: {
       type: Number,
@@ -144,7 +144,4 @@ movieSchema.index({
   description: "text"
 }, { language_override: "dummy_language_override" });
 
-module.exports = mongoose.model(
-  "Movie",
-  movieSchema
-);
+module.exports = mongoose.model("Movie", movieSchema);

@@ -17,10 +17,10 @@ const castSchema = new mongoose.Schema({
 const seriesSchema = new mongoose.Schema(
   {
     title: {
-  type: String,
-  required: true,
-  trim: true
-},
+      type: String,
+      required: true,
+      trim: true
+    },
 
     slug: {
       type: String,
@@ -29,13 +29,13 @@ const seriesSchema = new mongoose.Schema(
     },
 
     description: {
-  type: String,
-  default: ""
-},
-   genre: [{
-  type: String,
-  trim: true
-}],
+      type: String,
+      default: ""
+    },
+    genre: [{
+      type: String,
+      trim: true
+    }],
 
     releaseYear: Number,
     duration: String,
@@ -52,24 +52,24 @@ const seriesSchema = new mongoose.Schema(
 
     is18Plus: { type: Boolean, default: false },
     isHide: {
-    type: Boolean,
-    default: false
-},
+      type: Boolean,
+      default: false
+    },
     isPublished: {
-  type: Boolean,
-  default: false,
-  index: true,
-},
+      type: Boolean,
+      default: false,
+      index: true,
+    },
 
     // Priority: higher = shown first (0 = default)
     priority: { type: Number, default: 0 },
 
     rating: {
-  type: Number,
-  min: 0,
-  max: 10,
-  default: 0
-},
+      type: Number,
+      min: 0,
+      max: 10,
+      default: 0
+    },
 
     cast: [castSchema],
 
@@ -94,16 +94,16 @@ const seriesSchema = new mongoose.Schema(
     ],
 
     totalSeasons: {
-  type: Number,
-  default: 0,
-  min: 0
-},
+      type: Number,
+      default: 0,
+      min: 0
+    },
 
-totalEpisodes: {
-  type: Number,
-  default: 0,
-  min: 0
-},
+    totalEpisodes: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
 
 
 
