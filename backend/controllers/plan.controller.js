@@ -4,7 +4,7 @@ const Plan = require("../models/plan.model");
 exports.getPlans = async (req, res) => {
   try {
     const plans = await Plan.find({ isActive: true })
-      .sort({ createdAt: -1 });
+      .sort({ sortOrder: 1 });
 
     res.json({
       success: true,
