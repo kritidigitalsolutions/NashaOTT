@@ -1,5 +1,7 @@
 /* eslint-disable no-unused-vars */
 const Interaction = require("../models/interaction.model");
+const Movie = require("../models/movie.model");
+const Series = require("../models/series.model");
 
 // ✅ LIKE / DISLIKE TOGGLE
 exports.toggleInteraction = async (req, res) => {
@@ -15,6 +17,12 @@ exports.toggleInteraction = async (req, res) => {
       return res.status(400).json({ message: "Invalid type" });
     }
 
+    if (!["movie", "series"].includes(contentType.toLowerCase())) {
+      return res.status(400).json({ message: "Invalid contentType" });
+    }
+
+    const Model = contentType.toLowerCase() === "movie" ? Movie : Series;
+
     // 🔍 check existing
     const existing = await Interaction.findOne({
       user: userId,
@@ -25,6 +33,9 @@ exports.toggleInteraction = async (req, res) => {
     if (existing && existing.type === type) {
       await Interaction.deleteOne({ _id: existing._id });
 
+      const updateField = type === "like" ? "likes" : "dislikes";
+      await Model.findByIdAndUpdate(contentId, { $inc: { [updateField]: -1 } });
+
       return res.json({
         message: `${type} removed`
       });
@@ -32,8 +43,14 @@ exports.toggleInteraction = async (req, res) => {
 
     // 🔁 if different type → UPDATE
     if (existing) {
+      const oldType = existing.type;
       existing.type = type;
       await existing.save();
+
+      const incObj = oldType === "like" 
+        ? { likes: -1, dislikes: 1 } 
+        : { likes: 1, dislikes: -1 };
+      await Model.findByIdAndUpdate(contentId, { $inc: incObj });
 
       return res.json({
         message: `Changed to ${type}`
@@ -48,17 +65,20 @@ exports.toggleInteraction = async (req, res) => {
       type
     });
 
+    const updateField = type === "like" ? "likes" : "dislikes";
+    await Model.findByIdAndUpdate(contentId, { $inc: { [updateField]: 1 } });
+
     res.json({
       message: `${type} added`
     });
 
   } catch (error) {
-  console.error("ERROR:", error);
-  res.status(500).json({
-    message: "Server error",
-    error: error.message
-  });
-}
+    console.error("ERROR:", error);
+    res.status(500).json({
+      message: "Server error",
+      error: error.message
+    });
+  }
 };
 
 exports.getUserInteraction = async (req, res) => {

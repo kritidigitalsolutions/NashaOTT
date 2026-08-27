@@ -48,16 +48,8 @@ const performCascadeDeleteForUsers = async (userIds, userPhones = []) => {
             { $set: { isUsed: false, usedBy: null } }
         );
 
-        // 4. Pull user IDs from Movie, Series, and Notification tracking arrays
+        // 4. Pull user IDs from Notification tracking arrays
         await Promise.all([
-            Movie.updateMany(
-                {},
-                { $pull: { likes: { $in: userIds }, dislikes: { $in: userIds } } }
-            ),
-            Series.updateMany(
-                {},
-                { $pull: { likes: { $in: userIds }, dislikes: { $in: userIds } } }
-            ),
             Notification.updateMany(
                 {},
                 { $pull: { readBy: { user: { $in: userIds } }, deletedBy: { user: { $in: userIds } } } }
@@ -80,18 +72,23 @@ exports.getAllUsers = async (
         const page = req.query.page ? Math.max(1, parseInt(req.query.page)) : null;
         const limit = req.query.limit ? Math.max(1, parseInt(req.query.limit)) : null;
         const q = req.query.q;
+        const status = req.query.status;
 
         let query = {};
 
         if (q) {
             const regex = new RegExp(q, "i");
-            query = {
-                $or: [
-                    { name: regex },
-                    { email: regex },
-                    { phone: regex }
-                ]
-            };
+            query.$or = [
+                { name: regex },
+                { email: regex },
+                { phone: regex }
+            ];
+        }
+
+        if (status === "active") {
+            query.isBlocked = { $ne: true };
+        } else if (status === "blocked") {
+            query.isBlocked = true;
         }
 
         let dbQuery = User.find(query)
@@ -336,17 +333,43 @@ exports.getUserGrowth = async (req, res) => {
         const curMonth = istNow.getUTCMonth();
         const curDate = istNow.getUTCDate();
 
-        // Loop for the last 7 days
+        const startOfPeriod = new Date(Date.UTC(curYear, curMonth, curDate - 6, 0, 0, 0, 0) - IST_OFFSET_MS);
+        const endOfPeriod = new Date(Date.UTC(curYear, curMonth, curDate + 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+
+        const stats = await User.aggregate([
+            {
+                $match: {
+                    createdAt: { $gte: startOfPeriod, $lt: endOfPeriod }
+                }
+            },
+            {
+                $group: {
+                    _id: {
+                        $dateToString: {
+                            format: "%Y-%m-%d",
+                            date: "$createdAt",
+                            timezone: "+05:30"
+                        }
+                    },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
+
+        const statsMap = {};
+        stats.forEach(item => {
+            statsMap[item._id] = item.count;
+        });
+
         for (let i = 6; i >= 0; i--) {
-            const startOfDay = new Date(Date.UTC(curYear, curMonth, curDate - i, 0, 0, 0, 0) - IST_OFFSET_MS);
-            const endOfDay = new Date(Date.UTC(curYear, curMonth, curDate - i + 1, 0, 0, 0, 0) - IST_OFFSET_MS);
+            const dateObj = new Date(Date.UTC(curYear, curMonth, curDate - i, 12, 0, 0, 0));
+            const yr = dateObj.getUTCFullYear();
+            const mo = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const dy = String(dateObj.getUTCDate()).padStart(2, '0');
+            const dateString = `${yr}-${mo}-${dy}`;
 
-            const istMidDay = new Date(Date.UTC(curYear, curMonth, curDate - i, 12, 0, 0, 0));
-            const dayName = daysOfWeek[istMidDay.getUTCDay()];
-
-            const count = await User.countDocuments({
-                createdAt: { $gte: startOfDay, $lt: endOfDay },
-            });
+            const count = statsMap[dateString] || 0;
+            const dayName = daysOfWeek[dateObj.getUTCDay()];
 
             growthData.push({
                 day: dayName,

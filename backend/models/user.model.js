@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     trim: true,
     lowercase: true,
     sparse: true,
+    index: true,
 },
 
 googleId: {
@@ -80,5 +81,7 @@ authProvider: {
         timestamps: true,
     }
 );
+
+userSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);

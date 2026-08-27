@@ -4,38 +4,54 @@ const categorySchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Category name is required"],
+      required: true,
       unique: true,
-      trim: true,
+      trim: true
     },
 
     slug: {
       type: String,
       unique: true,
       lowercase: true,
-      trim: true,
-      index: true,
-    },
-
-    priority: {
-      type: Number,
-      default: 0,
+      trim: true
     },
 
     isActive: {
       type: Boolean,
-      default: true,
+      default: true
     },
+    
+    priority: {
+      type: Number,
+      default: 0
+    },
+
+    // Admin-curated content for this category row (saved independently of webpage module)
+    curatedContent: [
+      {
+        contentType: {
+          type: String,
+          enum: ["Movie", "Series"],
+          required: true
+        },
+        contentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          required: true
+        },
+        position: {
+          type: Number,
+          default: 0
+        }
+      }
+    ]
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 // Generate the slug only when a category is created. Content records use the
 // slug as their category reference, so changing it on a rename would detach
-// existing movies, series, and dramas from this category.
-categorySchema.pre("save", function () {
+// existing movies and series from this category.
+categorySchema.pre("save", async function () {
   if (this.isNew && !this.slug) {
     this.slug = this.name
       .toLowerCase()
@@ -45,6 +61,6 @@ categorySchema.pre("save", function () {
   }
 });
 
-categorySchema.index({ priority: -1, createdAt: -1 });
+categorySchema.index({ isActive: 1 });
 
 module.exports = mongoose.model("Category", categorySchema);

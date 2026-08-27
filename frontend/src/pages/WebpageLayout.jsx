@@ -4,8 +4,21 @@ import { useToast } from "../App";
 import "./WebpageLayout.css";
 import {
   Plus, Trash2, ChevronLeft, ChevronRight, Search, Check, X,
-  LayoutGrid, Save, AlertCircle, PlayCircle, Sliders, ChevronDown, ChevronUp
+  LayoutGrid, Save, AlertCircle, PlayCircle, Sliders, ChevronDown, ChevronUp, Edit2
 } from "lucide-react";
+
+const HideArrowsStyle = () => (
+  <style>{`
+    .pos-input-no-arrows::-webkit-outer-spin-button,
+    .pos-input-no-arrows::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .pos-input-no-arrows {
+      -moz-appearance: textfield;
+    }
+  `}</style>
+);
 
 export default function WebpageLayout() {
   const { showToast } = useToast();
@@ -162,6 +175,36 @@ export default function WebpageLayout() {
     });
   };
 
+  const moveSectionItemToPos = (secIdx, currentIdx, newPosVal) => {
+    let newPos = parseInt(newPosVal, 10) - 1;
+    if (isNaN(newPos)) return;
+    setSections(prev => {
+      const next = [...prev];
+      const items = [...next[secIdx].items];
+      if (newPos < 0) newPos = 0;
+      if (newPos >= items.length) newPos = items.length - 1;
+      if (currentIdx === newPos) return prev;
+      const [movedItem] = items.splice(currentIdx, 1);
+      items.splice(newPos, 0, movedItem);
+      next[secIdx] = { ...next[secIdx], items };
+      return next;
+    });
+  };
+
+  const moveBannerToPos = (currentIdx, newPosVal) => {
+    let newPos = parseInt(newPosVal, 10) - 1;
+    if (isNaN(newPos)) return;
+    setHeroBanners(prev => {
+      const next = [...prev];
+      if (newPos < 0) newPos = 0;
+      if (newPos >= next.length) newPos = next.length - 1;
+      if (currentIdx === newPos) return prev;
+      const [movedItem] = next.splice(currentIdx, 1);
+      next.splice(newPos, 0, movedItem);
+      return next;
+    });
+  };
+
   /* ── Save ── */
   const saveLayout = async () => {
     setSaving(true);
@@ -246,7 +289,35 @@ export default function WebpageLayout() {
               <div className="wl-card-media" onClick={() => toggleItem(secIdx, item, true)} title="Click to deselect">
                 <img src={imgUrl(item.poster)} alt="" className="wl-poster" />
                 <div className="wl-card-badge wl-card-badge--check"><Check size={10} /></div>
-                <div className="wl-card-pos">#{idx + 1}</div>
+                <div className="wl-card-pos" onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', background: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', cursor: 'text', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }} title="Type to change order">
+                  <span style={{ marginRight: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#000' }}>Pos</span>
+                  <input 
+                    className="pos-input-no-arrows"
+                    key={`pos-sec-${secIdx}-${item._id}-${idx}`}
+                    type="number" 
+                    defaultValue={idx + 1}
+                    onBlur={e => {
+                      moveSectionItemToPos(secIdx, idx, e.target.value);
+                      e.target.value = idx + 1; 
+                    }}
+                    onKeyDown={e => {
+                      if(e.key === 'Enter') e.target.blur();
+                    }}
+                    style={{
+                      width: "36px",
+                      background: "rgba(255,255,255,0.2)",
+                      border: "1px dashed rgba(255,255,255,0.6)",
+                      color: "#fff",
+                      fontWeight: "bold",
+                      fontSize: "13px",
+                      outline: "none",
+                      textAlign: "center",
+                      padding: "2px 0",
+                      borderRadius: "4px"
+                    }}
+                  />
+                  <Edit2 size={12} style={{ marginLeft: '4px', opacity: 0.7, color: '#000' }} />
+                </div>
               </div>
               <div className="wl-card-body">
                 <p className="wl-card-title">{item.title}</p>
@@ -295,6 +366,7 @@ export default function WebpageLayout() {
   /* ── Main render ── */
   return (
     <div className="page-section">
+      <HideArrowsStyle />
       {/* Header */}
       <div className="pg-header">
         <div>
@@ -370,7 +442,35 @@ export default function WebpageLayout() {
                   return (
                     <div key={idx} className="wl-banner-card">
                       <div className="wl-banner-img" style={{ backgroundImage: `url(${imgUrl(item.banner || item.poster)})` }}>
-                        <span className="wl-banner-num">0{idx + 1}</span>
+                        <div className="wl-card-pos" onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', background: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', cursor: 'text', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', position: 'absolute', bottom: '10px', right: '10px', zIndex: 10 }} title="Type to change order">
+                          <span style={{ marginRight: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#000' }}>Pos</span>
+                          <input 
+                            className="pos-input-no-arrows"
+                            key={`pos-banner-${item._id}-${idx}`}
+                            type="number" 
+                            defaultValue={idx + 1}
+                            onBlur={e => {
+                              moveBannerToPos(idx, e.target.value);
+                              e.target.value = idx + 1; 
+                            }}
+                            onKeyDown={e => {
+                              if(e.key === 'Enter') e.target.blur();
+                            }}
+                            style={{
+                              width: "36px",
+                              background: "rgba(255,255,255,0.2)",
+                              border: "1px dashed rgba(255,255,255,0.6)",
+                              color: "#fff",
+                              fontWeight: "bold",
+                              fontSize: "13px",
+                              outline: "none",
+                              textAlign: "center",
+                              padding: "2px 0",
+                              borderRadius: "4px"
+                            }}
+                          />
+                          <Edit2 size={12} style={{ marginLeft: '4px', opacity: 0.7, color: '#000' }} />
+                        </div>
                         <span className={`wl-type wl-type-abs ${(banner.contentType || "").toLowerCase()}`}>
                           {(banner.contentType || "").toUpperCase()}
                         </span>

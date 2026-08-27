@@ -29,21 +29,21 @@
 
 .category-chip-btn:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(212, 175, 55, 0.35); /* Subtle gold border on hover */
+  border-color: rgba(255, 255, 255, 0.15);
   color: rgba(255, 255, 255, 0.95);
 }
 
 .category-chip-btn.active {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.18) 0%, rgba(212, 175, 55, 0.05) 100%);
-  border-color: var(--primary); /* Gold border */
-  color: var(--primary); /* Gold text */
-  box-shadow: 0 0 16px rgba(212, 175, 55, 0.15);
+  background: rgba(229, 9, 20, 0.1); /* Subtle red background */
+  border-color: var(--primary); /* Red border */
+  color: var(--primary); /* Red text */
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.15);
   transform: translateY(-1px);
 }
 
 .category-chip-btn.active:hover {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22) 0%, rgba(212, 175, 55, 0.08) 100%);
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.22);
+  background: rgba(229, 9, 20, 0.15);
+  box-shadow: 0 0 12px rgba(229, 9, 20, 0.2);
 }
 
 .category-chips-empty {

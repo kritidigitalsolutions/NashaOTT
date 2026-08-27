@@ -222,7 +222,11 @@ export default function Content() {
     }
 
     try {
-      const endpoint = contentType === "movies" ? `/admin/movies/${item._id}` : `/admin/series/${item._id}`;
+      let endpoint = "";
+      if (contentType === "movies") endpoint = `/admin/movies/${item._id}`;
+      else if (contentType === "series") endpoint = `/admin/series/${item._id}`;
+      else endpoint = `/admin/${item.contentType === "movies" ? "movies" : "series"}/${item._id}`;
+
       const formData = new FormData();
       formData.append("isPublished", String(newIsPublished));
 
@@ -249,16 +253,19 @@ export default function Content() {
     const confirmed = window.confirm(`Are you sure you want to ${checked ? "hide" : "unhide"} ALL adult ${contentType}?`);
     if (!confirmed) return;
     try {
-      const endpoint = contentType === "movies" ? "/admin/movies/bulk-hide-adult" : "/admin/series/bulk-hide-adult";
-      await API.patch(endpoint, { isHide: checked });
-
-      if (contentType === "movies") {
-        setGlobalHideMovies(checked);
+      let endpoint = contentType === "movies" ? "/admin/movies/bulk-hide-adult" : "/admin/series/bulk-hide-adult";
+      if (contentType === "all") endpoint = "/admin/content/bulk-hide-adult"; // If you wanted to do both, but currently only supported individually or handled here. We can skip bulk action for 'all' or just alert. Let's handle it later or disable it for 'all' in UI.
+      if (contentType === "all") {
+        await API.patch("/admin/movies/bulk-hide-adult", { isHide: checked });
+        await API.patch("/admin/series/bulk-hide-adult", { isHide: checked });
       } else {
-        setGlobalHideSeries(checked);
+        await API.patch(endpoint, { isHide: checked });
       }
 
-      alert(`All adult ${contentType} are now ${checked ? "hidden" : "visible"}.`);
+      if (contentType === "movies" || contentType === "all") setGlobalHideMovies(checked);
+      if (contentType === "series" || contentType === "all") setGlobalHideSeries(checked);
+
+      alert(`All adult content is now ${checked ? "hidden" : "visible"}.`);
       const controller = new AbortController();
       fetchData(controller.signal);
     } catch (err) {
@@ -271,7 +278,11 @@ export default function Content() {
   const fetchData = async (signal) => {
     setLoading(true);
     try {
-      const endpoint = contentType === "movies" ? "/admin/movies" : "/admin/series";
+      let endpoint = "";
+      if (contentType === "movies") endpoint = "/admin/movies";
+      else if (contentType === "series") endpoint = "/admin/series";
+      else endpoint = "/admin/content/paginated";
+
       let url = `${endpoint}?page=${currentPage}&limit=10`;
       if (contentAge === "non-adult") url += "&is18Plus=false";
       else if (contentAge === "adult") {
@@ -280,8 +291,12 @@ export default function Content() {
 
       const res = await API.get(url, { signal });
 
-      const key = contentType === "movies" ? "movies" : "series";
-      setData(res.data[key] || []);
+      if (contentType === "all") {
+        setData(res.data.content || []);
+      } else {
+        const key = contentType === "movies" ? "movies" : "series";
+        setData(res.data[key] || []);
+      }
       setTotalPages(res.data.pages || 1);
       setTotalItems(res.data.total || 0);
 
@@ -327,7 +342,15 @@ export default function Content() {
   const doSearch = async (q) => {
     setIsSearching(true);
     try {
-      const endpoint = contentType === "movies" ? `/admin/movies/search?q=${encodeURIComponent(q)}` : `/admin/series/search?q=${encodeURIComponent(q)}`;
+      let endpoint = "";
+      if (contentType === "movies") endpoint = `/admin/movies/search?q=${encodeURIComponent(q)}`;
+      else if (contentType === "series") endpoint = `/admin/series/search?q=${encodeURIComponent(q)}`;
+      else endpoint = `/admin/content/paginated?q=${encodeURIComponent(q)}`; // Not strictly a search endpoint, but wait. 
+      // If there's no combined search endpoint, we could either implement it or search locally. Let's search locally for "all" or add a search term to paginated endpoint. 
+      // Actually, let's just use local search for 'all' if there is no endpoint.
+      if (contentType === "all") {
+        throw new Error("Fallback to local search");
+      }
       const res = await API.get(endpoint);
       setSearchResults(res.data.results || []);
     } catch (err) {
@@ -339,7 +362,6 @@ export default function Content() {
     }
     setIsSearching(false);
   };
-
 
   const clearSearch = () => {
     setSearchQuery("");
@@ -506,7 +528,10 @@ export default function Content() {
     setUploadPhase("saving");
 
     try {
-      const typeFolder = contentType === "movies" ? "movies" : "series";
+      let typeFolder = "";
+      if (contentType === "movies") typeFolder = "movies";
+      else if (contentType === "series") typeFolder = "series";
+      else typeFolder = selectedItem.contentType === "movies" ? "movies" : "series";
 
       // 1. Direct upload cast image files and update payload URLs
       const invalidCast = (editData.cast || []).find((c, idx) => {
@@ -560,7 +585,7 @@ export default function Content() {
 
       // 5. Direct upload video (movies only)
       let videoUrl = uploadData.videoUrl || "";
-      if (contentType === "movies" && uploadData.video) {
+      if ((contentType === "movies" || (contentType === "all" && selectedItem.contentType === "movies")) && uploadData.video) {
         videoUrl = await uploadToBunny(uploadData.video, "movies", "videos", (percent) => {
           setUploadProgress(percent);
         });
@@ -605,11 +630,15 @@ export default function Content() {
       formData.append("poster", posterUrl);
       formData.append("banner", bannerUrl);
       formData.append("trailerUrl", trailerUrl);
-      if (contentType === "movies") {
+      if (contentType === "movies" || (contentType === "all" && selectedItem.contentType === "movies")) {
         formData.append("videoUrl", videoUrl);
       }
 
-      const route = contentType === "movies" ? "movies" : "series";
+      let route = "";
+      if (contentType === "movies") route = "movies";
+      else if (contentType === "series") route = "series";
+      else route = selectedItem.contentType === "movies" ? "movies" : "series";
+
       await API.patch(`/admin/${route}/${selectedItem._id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -692,8 +721,12 @@ export default function Content() {
   const handleDelete = async (item) => {
     if (!window.confirm(`Delete '${item.title || item.name}' permanently?`)) return;
     try {
-      if (contentType === "movies") await API.delete(`/admin/movies/${item._id}`);
-      else await API.delete(`/admin/series/${item._id}`);
+      let route = "";
+      if (contentType === "movies") route = "movies";
+      else if (contentType === "series") route = "series";
+      else route = item.contentType === "movies" ? "movies" : "series";
+
+      await API.delete(`/admin/${route}/${item._id}`);
 
       alert("Deleted");
       fetchData();
@@ -799,6 +832,13 @@ export default function Content() {
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
             <div className="tab-group" style={{ display: "flex", background: "var(--bg3)", padding: "4px", borderRadius: "12px", gap: "4px" }}>
               <button
+                className={`btn ${contentType === "all" ? "btn-primary" : "btn-ghost"}`}
+                onClick={() => { setContentType("all"); setCurrentPage(1); }}
+                style={{ borderRadius: "8px", boxShadow: contentType === "all" ? "var(--shadow-sm)" : "none" }}
+              >
+                <Layers size={18} /> All
+              </button>
+              <button
                 className={`btn ${contentType === "movies" ? "btn-primary" : "btn-ghost"}`}
                 onClick={() => { setContentType("movies"); setCurrentPage(1); }}
                 style={{ borderRadius: "8px", boxShadow: contentType === "movies" ? "var(--shadow-sm)" : "none" }}
@@ -887,6 +927,104 @@ export default function Content() {
             {searchResults.length} result{searchResults.length !== 1 ? "s" : ""} for "{searchQuery}"
             <button className="link-btn" onClick={clearSearch} style={{ marginLeft: 8 }}>Clear</button>
           </p>
+        )}
+
+        {/* ========== ALL CONTENT TABLE ========== */}
+        {contentType === "all" && !selectedSeries && (
+          <div className="table-section">
+            <div className="section-head" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+              <h3 style={{ margin: 0 }}><Layers size={20} /> All Content Library</h3>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600 }}>{totalItems} Total Items</span>
+            </div>
+            {loading ? <p>Loading…</p> : (
+              <div className="tbl-wrap">
+                <table className="tbl">
+                  <thead>
+                    <tr>
+                      <th>Title</th><th>Type</th><th>Category</th><th>Year</th><th>Priority</th><th>Premium</th><th>18+</th><th>Status</th><th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayData.length === 0 ? (
+                      <tr><td colSpan={9}>No content found</td></tr>
+                    ) : displayData.map(item => (
+                      <tr key={item._id}>
+                        <td>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <img src={getFullUrl(item.poster)} alt="" style={{ width: 40, height: 60, objectFit: "cover", borderRadius: 4 }} />
+                            <div>
+                              <div style={{ fontWeight: 600 }}>{item.title}</div>
+                              {item.contentType === "movies" && <div style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>{item.duration}</div>}
+                              {isLocked(item) && (
+                                <div style={{ fontSize: "0.75rem", color: "var(--orange)" }}>
+                                  <Calendar size={11} style={{ marginRight: 3, verticalAlign: "middle" }} />
+                                  {new Date(item.releaseDate).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className={`badge ${item.contentType === "movies" ? "badge-pub" : "badge-active"}`}>
+                            {item.contentType === "movies" ? "Movie" : "Series"}
+                          </span>
+                        </td>
+                        <td>{getCategoryDisplay(item.category)}</td>
+                        <td>{item.releaseYear}</td>
+                        <td><strong>{item.priority || 0}</strong></td>
+                        <td><span className={`badge ${item.isPremium ? "badge-active" : "badge-draft"}`}>{item.isPremium ? "Premium" : "Free"}</span></td>
+                        <td><span className={`badge ${item.is18Plus ? "badge-coming" : "badge-draft"}`}>{item.is18Plus ? "18+" : "No"}</span></td>
+                        <td>
+                          <span
+                            className={`badge ${getContentStatus(item).className}`}
+                            style={{ cursor: "pointer", transition: "transform 0.15s, opacity 0.15s" }}
+                            onClick={() => handleToggleStatus(item)}
+                            title={`Click to switch status to ${isPublished(item) ? "Draft" : "Published"}`}
+                          >
+                            {getContentStatus(item).label}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="tbl-actions">
+                            <button className="icon-btn view" onClick={() => openView(item)} title="View">
+                              <Eye size={18} />
+                            </button>
+                            <button className="icon-btn edit" onClick={() => openEdit(item)} title="Edit">
+                              <Edit2 size={18} />
+                            </button>
+                            <button className="icon-btn del" onClick={() => handleDelete(item)} title="Delete">
+                              <Trash2 size={18} />
+                            </button>
+                            <button 
+                              className="icon-btn" 
+                              style={{ color: isPublished(item) ? "#22c55e" : "var(--text-muted)" }}
+                              onClick={() => handleToggleStatus(item)} 
+                              title={isPublished(item) ? "Move to Draft" : "Publish"}
+                            >
+                              {isPublished(item) ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                            </button>
+                            {item.contentType === "series" && (
+                              <button className="btn btn-ghost eps-btn" onClick={() => handleSeriesClick(item)}>
+                                <Tv size={14} /> Seasons
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {searchResults === null && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                onPageChange={setCurrentPage}
+              />
+            )}
+          </div>
         )}
 
         {/* ========== MOVIES TABLE ========== */}
@@ -1740,7 +1878,7 @@ export default function Content() {
                         <option value="yes">Yes</option>
                       </select>
                     </div>
-                    <div className="form-row">
+                    <div className="form-row" style={{ gridColumn: "1 / -1" }}>
                       <label className="form-label" style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}>Selected Categories (Select Multiple)</label>
                       <div style={{ marginTop: "4px" }}>
                         <CategoryPicker

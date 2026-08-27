@@ -38,15 +38,18 @@ const getActiveCategories = async (req, res) => {
 };
 
 // ========================================
-// GET CATEGORY BY SLUG (USER - READ ONLY)
+// GET CATEGORY BY ID OR SLUG (USER - READ ONLY)
 // ========================================
 const getCategoryBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
-    const category = await Category.findOne({
-      slug: String(slug).toLowerCase().trim(),
-      isActive: true,
-    }).lean();
+    const mongoose = require("mongoose");
+    
+    const query = mongoose.Types.ObjectId.isValid(slug)
+      ? { _id: slug, isActive: true }
+      : { slug: String(slug).toLowerCase().trim(), isActive: true };
+
+    const category = await Category.findOne(query).lean();
 
     if (!category) {
       return res.status(404).json({

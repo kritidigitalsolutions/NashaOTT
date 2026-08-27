@@ -8,6 +8,7 @@ import "./UsersPage.css";
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,11 +29,11 @@ export default function UsersPage() {
     return `${serverUrl}/${cleanPath}`;
   };
 
-  const fetchUsers = async (page = 1, searchQuery = "") => {
+  const fetchUsers = async (page = 1, searchQuery = search, currentStatus = statusFilter) => {
     setLoading(true);
     try {
       const res = await API.get("/admin/users", {
-        params: { page, limit: 10, q: searchQuery }
+        params: { page, limit: 10, q: searchQuery, status: currentStatus === "all" ? undefined : currentStatus }
       });
       setUsers(res.data.users || []);
       setPagination(res.data.pagination || {
@@ -54,21 +55,21 @@ export default function UsersPage() {
     setLoading(false);
   };
 
-  // Debounced search query
+  // Debounced search query and status filter
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchUsers(1, search);
+      fetchUsers(1, search, statusFilter);
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [search]);
+  }, [search, statusFilter]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this user permanently?")) return;
     try {
       await API.delete(`/admin/users/${id}`);
       setUsers(p => p.filter(u => u._id !== id));
-      fetchUsers(currentPage, search);
+      fetchUsers(currentPage, search, statusFilter);
     } catch { alert("Failed to delete"); }
   };
 
@@ -86,7 +87,7 @@ export default function UsersPage() {
     try {
       await API.delete("/admin/users/delete-all");
       alert("All users deleted successfully.");
-      fetchUsers(1, "");
+      fetchUsers(1, "", statusFilter);
     } catch (err) {
       alert(err.response?.data?.message || "Failed to delete all users.");
     } finally {
@@ -105,7 +106,7 @@ export default function UsersPage() {
       if (selected?._id === id) {
         setSelected(prev => ({ ...prev, isBlocked: !isBlocked }));
       }
-      fetchUsers(currentPage, search);
+      fetchUsers(currentPage, search, statusFilter);
     } catch (err) {
       alert(err.response?.data?.message || `Failed to ${actionText} user.`);
     }
@@ -120,7 +121,7 @@ export default function UsersPage() {
           <p className="pg-sub">View, search, and manage all platform users</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
-          <button className="btn btn-primary" onClick={() => fetchUsers(currentPage, search)}>
+          <button className="btn btn-primary" onClick={() => fetchUsers(currentPage, search, statusFilter)}>
             <RefreshCw size={16} style={{ display: "inline-block", marginRight: 6 }} /> Refresh
           </button>
           <button 
@@ -154,12 +155,32 @@ export default function UsersPage() {
 
       {/* Table Card */}
       <div className="content-box">
-        <div className="search-row" style={{ marginBottom: 20 }}>
-          <div className="search-field">
+        <div className="search-row" style={{ marginBottom: 20, display: "flex", gap: "15px" }}>
+          <div className="search-field" style={{ flex: 1 }}>
             <Search size={18} />
             <input placeholder="Search by name, email, or phone..." value={search}
               onChange={e => setSearch(e.target.value)} />
           </div>
+          <select 
+            value={statusFilter} 
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            style={{
+              padding: '10px 15px',
+              borderRadius: '8px',
+              border: '1px solid var(--border)',
+              backgroundColor: 'var(--bg2)',
+              color: 'var(--text)',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+          </select>
         </div>
 
         {loading ? (

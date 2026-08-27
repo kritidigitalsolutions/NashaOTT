@@ -39,6 +39,7 @@ function ChartTip({ active, payload, label }) {
 
 export default function Dashboard() {
   const [users, setUsers] = useState([]);
+  const [activeUsersCount, setActiveUsersCount] = useState(0);
   const [subscriptionStats, setSubscriptionStats] = useState({
     totalSubscribedUsers: 0,
     totalNotSubscribedUsers: 0,
@@ -83,7 +84,7 @@ export default function Dashboard() {
       //   API.get("/admin/content/stats"),
       // ]);
       const [uRes, sRes, gRes, subStatsRes, incomeStatsRes, regStatsRes] = await Promise.all([
-        API.get("/admin/users"),
+        API.get("/admin/users?page=1&limit=5"),
         API.get("/admin/content/stats"),
         API.get("/admin/user/growth"),
         API.get("/admin/subscription/stats"),
@@ -117,7 +118,7 @@ export default function Dashboard() {
         totalRegistration: 0,
       });
       setUsers(uRes.data?.users || uRes.data?.data || uRes.data || []);
-      // setContent(cRes.data?.data || cRes.data || []);
+      setActiveUsersCount(uRes.data?.activeCount || 0);
     } catch (err) {
       console.log("Dashboard fetch error:", err);
     }
@@ -166,10 +167,10 @@ export default function Dashboard() {
   //   { name: "Other",  value: other  || 1 },
   // ];
 
-  const activeUsers = Array.isArray(users) ? users.filter(u => !u.isBlocked).length : 0;
+  const activeUsers = activeUsersCount;
 
-  const usersThisWeek = Array.isArray(users) ? users.filter(u => new Date(u.createdAt) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length : 0;
-  const prevUsers = (Array.isArray(users) ? users.length : 0) - usersThisWeek;
+  const usersThisWeek = GROWTH.reduce((sum, item) => sum + (item.users || 0), 0);
+  const prevUsers = (registrationStats.totalRegistration || 0) - usersThisWeek;
   const userGrowthPercent = prevUsers > 0 ? Math.round((usersThisWeek / prevUsers) * 100) : (usersThisWeek > 0 ? 100 : 0);
 
   return (
@@ -190,7 +191,7 @@ export default function Dashboard() {
         <div className="stat-card s-red">
           <div className="stat-icon"><Users size={32} /></div>
           <div className="stat-label">Total Users</div>
-          <div className="stat-value">{loading ? "..." : (Array.isArray(users) ? users.length : 0)}</div>
+          <div className="stat-value">{loading ? "..." : (registrationStats.totalRegistration || 0)}</div>
           <div className="stat-trend up">↑ +{userGrowthPercent}% this week</div>
         </div>
         <div className="stat-card s-blue">
