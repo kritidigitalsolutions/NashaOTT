@@ -51,3 +51,32 @@
   color: var(--text-muted);
   padding: 10px 0;
 }
+
+/* ── Light Mode Overrides ── */
+body.light .category-chip-btn {
+  background: #f1f5f9;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  color: #374151;
+}
+
+body.light .category-chip-btn:hover {
+  background: #e2e8f0;
+  border-color: rgba(0, 0, 0, 0.22);
+  color: #0f172a;
+}
+
+body.light .category-chip-btn.active {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: #d4af37;
+  color: #92700a;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.18);
+}
+
+body.light .category-chip-btn.active:hover {
+  background: rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+}
+
+body.light .category-chips-empty {
+  color: #64748b;
+}

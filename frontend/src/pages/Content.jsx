@@ -3,6 +3,7 @@ import API, { BASE_URL } from "../api/axios";
 import { uploadToBunny } from "../features/services/bunnyUpload";
 
 import "./Content.css";
+import "./ContentLight.css";
 import {
   Eye, EyeOff, Globe, Edit2, Trash2, X, Play, Film, Tv,
   Search, Plus, ChevronRight, ChevronLeft, ChevronDown, User, Calendar, Video,
@@ -162,6 +163,18 @@ export default function Content() {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
     return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const formatDateTimeLocal = (dateStr) => {
+    if (!dateStr) return "";
+    const str = String(dateStr);
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(str)) {
+      return str;
+    }
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return "";
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
   };
 
 
@@ -469,7 +482,12 @@ export default function Content() {
   /* ===================== MODALS ===================== */
   const openView = (item) => { setSelectedItem(item); setModalMode("view"); setEditData(null); };
   const openEdit = (item) => {
-    setEditData({ ...item, cast: item.cast ? [...item.cast.map(c => ({ ...c }))] : [] });
+    const isComingSoonVal = !!(item.isComingSoon || (item.releaseDate && new Date(item.releaseDate) > new Date()));
+    setEditData({
+      ...item,
+      isComingSoon: isComingSoonVal,
+      cast: item.cast ? [...item.cast.map(c => ({ ...c }))] : []
+    });
     setSelectedItem(item);
     setModalMode("edit");
     setCastFiles({});
@@ -523,6 +541,39 @@ export default function Content() {
   /* ===================== EDIT SAVE ===================== */
   const handleSave = async () => {
     if (!editData) return;
+
+    // ── Validate Coming Soon requires a complete date+time ──
+    if (editData.isComingSoon) {
+      const rd = editData.releaseDate;
+      if (!rd || !rd.includes("T") || rd.endsWith("T") || isNaN(Date.parse(rd))) {
+        alert("Please set a complete Scheduled Release Date & Time when 'Coming Soon' is Yes.");
+        return;
+      }
+      const rdDate = new Date(rd);
+      const maxYear = new Date().getFullYear() + 10;
+      if (rdDate.getFullYear() < 2020) {
+        alert("Scheduled release date year must be 2020 or later.");
+        return;
+      }
+      if (rdDate.getFullYear() > maxYear) {
+        alert(`Scheduled release date year cannot be more than ${maxYear} (10 years from now).`);
+        return;
+      }
+      if (rdDate <= new Date()) {
+        alert("Scheduled release date must be in the future for 'Coming Soon' content.");
+        return;
+      }
+    }
+
+    // ── Validate Release Year ──
+    if (editData.releaseYear) {
+      const yr = Number(editData.releaseYear);
+      if (yr < 1888 || yr > new Date().getFullYear() + 5) {
+        alert(`Release year must be between 1888 and ${new Date().getFullYear() + 5}.`);
+        return;
+      }
+    }
+
     setLoading(true);
     setUploadProgress(0);
     setUploadPhase("saving");
@@ -1795,7 +1846,21 @@ export default function Content() {
                     </div>
                     <div className="form-row">
                       <label className="form-label">Release Year</label>
-                      <input className="form-input" type="number" value={editData.releaseYear || ""} onChange={e => setEditData(s => ({ ...s, releaseYear: Number(e.target.value) }))} />
+                      <input
+                        className="form-input"
+                        type="number"
+                        min="1900"
+                        max="2100"
+                        value={editData.releaseYear || ""}
+                        onChange={e => {
+                          let val = e.target.value;
+                          if (val !== "") {
+                            const num = Number(val);
+                            if (num > 2100) val = "2100";
+                          }
+                          setEditData(s => ({ ...s, releaseYear: val === "" ? "" : Number(val) }));
+                        }}
+                      />
                     </div>
                     <div className="form-row">
                       <label className="form-label">Rating (0–10)</label>
@@ -1873,7 +1938,18 @@ export default function Content() {
                     )}
                     <div className="form-row">
                       <label className="form-label">Coming Soon</label>
-                      <select className="form-input" value={editData.isComingSoon ? "yes" : "no"} onChange={e => setEditData(s => ({ ...s, isComingSoon: e.target.value === "yes" }))}>
+                      <select
+                        className="form-input"
+                        value={editData.isComingSoon ? "yes" : "no"}
+                        onChange={e => {
+                          const isComingVal = e.target.value === "yes";
+                          setEditData(s => ({
+                            ...s,
+                            isComingSoon: isComingVal,
+                            releaseDate: isComingVal ? s.releaseDate : ""
+                          }));
+                        }}
+                      >
                         <option value="no">No</option>
                         <option value="yes">Yes</option>
                       </select>
@@ -1897,19 +1973,38 @@ export default function Content() {
                         onChange={e => setEditData(s => ({ ...s, priority: e.target.value === "" ? "" : Number(e.target.value) }))}
                       />
                     </div>
-                    <div className="form-row">
-                      <label className="form-label">Scheduled Release Date & Time</label>
-                      <input
-                        className="form-input"
-                        type="datetime-local"
-                        value={
-                          editData.releaseDate && !isNaN(Date.parse(editData.releaseDate))
-                            ? new Date(editData.releaseDate).toISOString().slice(0, 16)
-                            : ""
-                        }
-                        onChange={e => setEditData(s => ({ ...s, releaseDate: e.target.value }))}
-                      />
-                    </div>
+                    {editData.isComingSoon && (() => {
+                      const now = new Date();
+                      const minDT = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+                      const maxYear = now.getFullYear() + 10;
+                      const maxDT = `${maxYear}-12-31T23:59`;
+                      return (
+                        <div className="form-row">
+                          <label className="form-label">
+                            Scheduled Release Date & Time <span style={{ color: "#e57373" }}>*</span>
+                          </label>
+                          <input
+                            className="form-input"
+                            type="datetime-local"
+                            min={minDT}
+                            max={maxDT}
+                            value={formatDateTimeLocal(editData.releaseDate)}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val) {
+                                const yearPart = val.split("-")[0];
+                                if (yearPart && yearPart.length > 4) return;
+                              }
+                              setEditData(s => ({ ...s, releaseDate: val }));
+                            }}
+                            required
+                          />
+                          <small style={{ color: "#aaa", marginTop: 4 }}>
+                            Must be a future date within the next 10 years
+                          </small>
+                        </div>
+                      );
+                    })()}
 
                   </div>
 

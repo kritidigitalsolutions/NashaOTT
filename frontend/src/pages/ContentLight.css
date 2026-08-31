@@ -1,0 +1,242 @@
+﻿/* ================================================================
+   ContentLight.css
+   Light-mode overrides for the Content Library page.
+   Imported separately in Content.jsx after Content.css.
+   ================================================================ */
+
+/* Page background */
+body.light .content-page {
+  background: #f8fafc;
+}
+
+/* Modal overlay backdrop */
+body.light .modal-overlay {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Modal box shell */
+body.light .modal-box {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.14), 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+/* Modal header */
+body.light .modal-head {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.light .modal-head h3 {
+  color: #0f172a;
+}
+
+body.light .modal-close {
+  color: #64748b;
+}
+
+body.light .modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Modal body */
+body.light .modal-body {
+  background: #ffffff;
+}
+
+/* Modal footer */
+body.light .modal-footer {
+  background: #f8fafc;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Horizontal rules inside modal */
+body.light .modal-body hr {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Form labels */
+body.light .form-label {
+  color: #374151 !important;
+}
+
+/* Form inputs, selects, textareas */
+body.light .form-input {
+  background: #f1f5f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.18) !important;
+  color: #0f172a !important;
+}
+
+body.light .form-input:focus {
+  background: #ffffff !important;
+  border-color: #d4af37 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.18) !important;
+}
+
+body.light .form-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.light .form-input option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+/* Upload info box */
+body.light .upload-info {
+  background: #eff6ff;
+}
+
+body.light .upload-info p {
+  color: #374151;
+}
+
+/* Upload hint box */
+body.light .upload-hint {
+  background: #fefce8;
+  color: #374151;
+}
+
+/* Dashed file-label upload areas */
+body.light .file-label {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #475569;
+}
+
+body.light .file-label:hover {
+  background: #ffffff;
+  border-color: #d4af37;
+  color: #d4af37;
+}
+
+/* Cast edit rows */
+body.light .cast-edit-row {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light .cast-img-placeholder {
+  background: #e2e8f0;
+  border-color: rgba(0, 0, 0, 0.15);
+  color: #64748b;
+}
+
+/* Icon buttons */
+body.light .icon-btn {
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #64748b;
+  background: transparent;
+}
+
+body.light .icon-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Ghost / Cancel button */
+body.light .btn-ghost {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #374151;
+}
+
+body.light .btn-ghost:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Search bar */
+body.light .search-input {
+  background: #f8fafc;
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #0f172a;
+}
+
+body.light .search-input:focus {
+  background: #ffffff;
+  border-color: #d4af37;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12);
+}
+
+body.light .search-icon {
+  color: #94a3b8;
+}
+
+/* Table */
+body.light .tbl thead tr {
+  background: #f1f5f9;
+}
+
+body.light .tbl th {
+  color: #475569;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+body.light .tbl td {
+  color: #0f172a;
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+body.light .tbl tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Status badges */
+body.light .badge-active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+body.light .badge-blocked {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+body.light .badge-draft {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+body.light .badge-pub {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+/* Hint text below date input */
+body.light .modal-body small {
+  color: #64748b;
+}
+
+/* Section headings inside modal */
+body.light .modal-body h4,
+body.light .modal-body h5 {
+  color: #0f172a;
+}
+
+/* View-detail items */
+body.light .detail-item strong,
+body.light .detail-full strong {
+  color: #64748b;
+}
+
+body.light .detail-item span,
+body.light .detail-full p {
+  color: #0f172a;
+}
+
+/* View modal banner */
+body.light .view-banner {
+  background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+}
+
+body.light .banner-overlay h2 {
+  color: #0f172a;
+}
+
+/* View details panel */
+body.light .view-details {
+  background: #f8fafc;
+  border-top-color: rgba(0, 0, 0, 0.08);
+}

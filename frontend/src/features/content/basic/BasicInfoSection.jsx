@@ -88,6 +88,8 @@ export default function BasicInfoSection({ form, ch }) {
             className="form-input-styled"
             name="releaseYear"
             type="number"
+            min="1900"
+            max="2100"
             placeholder="2024"
             onChange={ch}
             value={form.releaseYear}
@@ -279,6 +281,8 @@ export default function BasicInfoSection({ form, ch }) {
             className="form-input-styled"
             type="datetime-local"
             name="releaseDate"
+            min="1900-01-01T00:00"
+            max="2100-12-31T23:59"
             onChange={ch}
             value={form.releaseDate}
             required

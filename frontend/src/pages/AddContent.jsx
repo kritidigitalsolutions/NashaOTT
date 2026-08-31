@@ -206,6 +206,20 @@ export default function AddContent() {
  // Submit
 const handleSubmit = async (e) => {
   e.preventDefault();
+
+  // Validate year ranges
+  if (form.releaseYear && (Number(form.releaseYear) < 1800 || Number(form.releaseYear) > 2100)) {
+    alert("Release year must be between 1800 and 2100.");
+    return;
+  }
+  if (form.releaseDate) {
+    const year = new Date(form.releaseDate).getFullYear();
+    if (year < 1800 || year > 2100) {
+      alert("Scheduled release date year must be between 1800 and 2100.");
+      return;
+    }
+  }
+
   setLoading(true);
   setUploadProgress(0);
   setUploadPhase("main");

@@ -45,6 +45,20 @@ export default function useContentForm() {
       }
     }
 
+    if (name === "releaseYear" && value !== "") {
+      const num = Number(value);
+      if (num > 2100) {
+        value = "2100";
+      }
+    }
+
+    if (name === "releaseDate" && value !== "") {
+      const yearPart = value.split("-")[0];
+      if (yearPart && yearPart.length > 4) {
+        return;
+      }
+    }
+
     setForm((f) => ({
       ...f,
       [name]: type === "checkbox" ? checked : value,
