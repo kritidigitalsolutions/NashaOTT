@@ -393,7 +393,7 @@ const handleSelect = (item) => {
                   </div>
                   <div className="info-card-content">
                     <span className="info-card-label">Email Address</span>
-                    <span className="info-card-value">{adminData?.email || "admin@nazarott.com"}</span>
+                    <span className="info-card-value">{adminData?.email || "admin@bichoo.app"}</span>
                   </div>
                 </div>
 

@@ -209,7 +209,7 @@ export default function HelpPage() {
                   className="form-input"
                   type="email"
                   value={selected.supportEmail || ""}
-                  placeholder="e.g. support@nazarott.in"
+                  placeholder="e.g. support@bichoo.app"
                   disabled={mode === "view"}
                   onChange={(e) => setSelected({ ...selected, supportEmail: e.target.value })}
                 />

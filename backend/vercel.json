@@ -12,7 +12,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://nazar-ott-admin-panel.vercel.app"
+          "value": "https://bichoo.app"
         },
         {
           "key": "Access-Control-Allow-Methods",

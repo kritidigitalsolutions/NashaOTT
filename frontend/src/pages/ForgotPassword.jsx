@@ -142,7 +142,7 @@ const ForgotPassword = () => {
       <form className="login-card" onSubmit={handleSubmit}>
         <div className="login-brand">
           <div className="login-logo">
-            <Logo alt="Nazar Logo" />
+            <Logo alt="Bichoo Logo" />
           </div>
           <h1>Forgot Password</h1>
           <p>Reset your admin password</p>

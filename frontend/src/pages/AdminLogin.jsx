@@ -33,7 +33,11 @@ const AdminLogin = () => {
         setError("No token received. Please try again.");
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Login failed. Check credentials.");
+      if (err.code === "ERR_NETWORK" || !err.response) {
+        setError("Network error: Cannot reach backend server. Please ensure backend is running.");
+      } else {
+        setError(err.response?.data?.message || "Login failed. Check credentials.");
+      }
     }
     setLoading(false);
   };
@@ -46,9 +50,9 @@ const AdminLogin = () => {
         {/* Brand */}
         <div className="login-brand">
           <div className="login-logo">
-            <Logo alt="Nazar Logo" />
+            <Logo alt="Bichoo Logo" />
           </div>
-          <h1>Nazar OTT</h1>
+          <h1>Bichoo</h1>
           <p>Sign in to your Admin Panel</p>
         </div>
 

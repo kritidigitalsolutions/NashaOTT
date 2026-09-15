@@ -39,10 +39,10 @@ export default function Sidebar({ theme, showSidebar, toggleSidebar, closeSideba
       {/* ── Brand ── */}
       <div className="sidebar-brand">
         <div className="sidebar-logo">
-          <Logo alt="Nazar Logo" />
+          <Logo alt="Bichoo Logo" />
         </div>
         <div>
-          <div className="sidebar-title">Nazar OTT</div>
+          <div className="sidebar-title">Bichoo</div>
           <div className="sidebar-tag">Admin Console</div>
         </div>
         <button className="mobile-close-btn" onClick={toggleSidebar}>

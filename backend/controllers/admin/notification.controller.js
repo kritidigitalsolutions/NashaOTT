@@ -49,7 +49,7 @@ exports.sendNotification = async (req, res) => {
       metadata.contentType = contentType;
 
       // Auto-build action URL for mobile deep-link
-      metadata.actionUrl = `nashaapp://${contentType}/id/${contentId}`;
+      metadata.actionUrl = `bichooapp://${contentType}/id/${contentId}`;
 
       // Auto-fetch content poster if no explicit imageUrl was provided
       if (!resolvedImageUrl) {
@@ -73,7 +73,7 @@ exports.sendNotification = async (req, res) => {
     if (planId) {
       metadata.planId = planId;
       if (!metadata.actionUrl) {
-        metadata.actionUrl = `nashaapp://plan/id/${planId}`;
+        metadata.actionUrl = `bichooapp://plan/id/${planId}`;
       }
     }
 

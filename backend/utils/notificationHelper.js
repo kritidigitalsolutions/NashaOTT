@@ -87,12 +87,12 @@ const sendContentUploadNotification = async ({ content, contentType, createdBy }
 
         const message = parts.length > 0
             ? parts.join("\n")
-            : `A new ${label.toLowerCase()} is now available on Nasha!`;
+            : `A new ${label.toLowerCase()} is now available on Bichoo!`;
 
         // ── Build deep link URL ───────────────────────────────────────────────
-        // Reads APP_DEEP_LINK_SCHEME from .env (e.g. "nashaott://" or "https://nashaott.com")
-        // Falls back to "nashaott://" if not set.
-        const scheme = (process.env.APP_DEEP_LINK_SCHEME || "nashaott://").replace(/\/+$/, "");
+        // Reads APP_DEEP_LINK_SCHEME from .env (e.g. "bichoo://" or "https://bichoo.app")
+        // Falls back to "bichoo://" if not set.
+        const scheme = (process.env.APP_DEEP_LINK_SCHEME || "bichoo://").replace(/\/+$/, "");
         const actionUrl = `${scheme}/content/${contentType}/${content._id}`;
 
         // ── Create DB notification record (broadcast to ALL users) ───────────
@@ -106,7 +106,7 @@ const sendContentUploadNotification = async ({ content, contentType, createdBy }
             metadata: {
                 contentId: content._id,
                 contentType,
-                actionUrl,          // full deep link e.g. nashaott://content/movie/<id>
+                actionUrl,          // full deep link e.g. bichoo://content/movie/<id>
             },
             createdBy,
             sentAt: new Date(),

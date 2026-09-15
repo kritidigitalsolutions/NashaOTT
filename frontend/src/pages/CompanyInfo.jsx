@@ -325,7 +325,7 @@ export default function CompanyInfo() {
           </div>
 
           <div className="preview-content">
-            <h2 className="preview-title">Nazar OTT</h2>
+            <h2 className="preview-title">Bichoo</h2>
 
             {hasDetails ? (
               <>
