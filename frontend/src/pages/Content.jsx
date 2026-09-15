@@ -87,8 +87,8 @@ export default function Content() {
 
   const [contentType, setContentType] = useState("movies");
   const [contentAge, setContentAge] = useState("all");
-  const [globalHideMovies, setGlobalHideMovies] = useState(false);
-  const [globalHideSeries, setGlobalHideSeries] = useState(false);
+  const [globalHideMovies, setGlobalHideMovies] = useState(() => localStorage.getItem("globalHideMovies") === "true");
+  const [globalHideSeries, setGlobalHideSeries] = useState(() => localStorage.getItem("globalHideSeries") === "true");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -275,8 +275,14 @@ export default function Content() {
         await API.patch(endpoint, { isHide: checked });
       }
 
-      if (contentType === "movies" || contentType === "all") setGlobalHideMovies(checked);
-      if (contentType === "series" || contentType === "all") setGlobalHideSeries(checked);
+      if (contentType === "movies" || contentType === "all") {
+        setGlobalHideMovies(checked);
+        localStorage.setItem("globalHideMovies", String(checked));
+      }
+      if (contentType === "series" || contentType === "all") {
+        setGlobalHideSeries(checked);
+        localStorage.setItem("globalHideSeries", String(checked));
+      }
 
       alert(`All adult content is now ${checked ? "hidden" : "visible"}.`);
       const controller = new AbortController();
@@ -304,14 +310,30 @@ export default function Content() {
 
       const res = await API.get(url, { signal });
 
+      let fetchedItems = [];
       if (contentType === "all") {
-        setData(res.data.content || []);
+        fetchedItems = res.data.content || [];
+        setData(fetchedItems);
       } else {
         const key = contentType === "movies" ? "movies" : "series";
-        setData(res.data[key] || []);
+        fetchedItems = res.data[key] || [];
+        setData(fetchedItems);
       }
       setTotalPages(res.data.pages || 1);
       setTotalItems(res.data.total || 0);
+
+      const adultItems = fetchedItems.filter(item => item.is18Plus !== false);
+      if (adultItems.length > 0) {
+        const isHidden = adultItems.every(item => item.isHide === true);
+        if (contentType === "movies" || contentType === "all") {
+          setGlobalHideMovies(isHidden);
+          localStorage.setItem("globalHideMovies", String(isHidden));
+        }
+        if (contentType === "series" || contentType === "all") {
+          setGlobalHideSeries(isHidden);
+          localStorage.setItem("globalHideSeries", String(isHidden));
+        }
+      }
 
       setSelectedSeries(null);
       setEpisodes([]);
@@ -961,7 +983,11 @@ export default function Content() {
               }}>
                 <input
                   type="checkbox"
-                  checked={contentType === "movies" ? globalHideMovies : globalHideSeries}
+                  checked={
+                    contentType === "all"
+                      ? (globalHideMovies && globalHideSeries)
+                      : (contentType === "movies" ? globalHideMovies : globalHideSeries)
+                  }
                   onChange={(e) => handleBulkHideAdult(e.target.checked)}
                   style={{ accentColor: "#ef4444", width: 16, height: 16, cursor: "pointer" }}
                 />
