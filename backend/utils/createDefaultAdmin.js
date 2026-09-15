@@ -19,7 +19,13 @@ const createDefaultAdmin = async () => {
       await Admin.findOne({ email });
 
     if (existingAdmin) {
-      console.log(`✅ Default admin already exists: ${email}`);
+      if (existingAdmin.name === "Nazar OTT" || existingAdmin.name === "Nasha OTT") {
+        existingAdmin.name = process.env.DEFAULT_ADMIN_NAME || "Bichoo";
+        await existingAdmin.save();
+        console.log(`✅ Default admin name updated to: ${existingAdmin.name}`);
+      } else {
+        console.log(`✅ Default admin already exists: ${email}`);
+      }
       return;
     }
 
@@ -32,7 +38,7 @@ const createDefaultAdmin = async () => {
     await Admin.create({
       name:
         process.env.DEFAULT_ADMIN_NAME ||
-        "Admin",
+        "Bichoo",
       email,
       password: hashedPassword
     });

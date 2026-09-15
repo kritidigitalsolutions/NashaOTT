@@ -38,10 +38,11 @@ const defaultAllowed = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:5173",
-  "https://admin.nazarott.com",
-  "https://nazarott.com",
-  "https://www.nazarott.com",
+  "https://admin.bichoo.app",
+  "https://bichoo.app",
+  "https://www.bichoo.app",
   "https://scintillating-meerkat-efbf09.netlify.app",
+  "https://bichoo.netlify.app",
   "https://nazarott.netlify.app"
 ].filter(Boolean);
 
@@ -64,14 +65,16 @@ const corsOptions = {
       origin.startsWith("http://localhost:") ||
       origin.startsWith("http://127.0.0.1:") ||
       origin.startsWith("http://192.168.");
-    const isNazarDomain =
+    const isBichooDomain =
+      origin === "https://bichoo.app" ||
+      origin.endsWith(".bichoo.app") ||
       origin === "https://nazarott.com" ||
       origin.endsWith(".nazarott.com");
-    const isNazarVercel =
+    const isBichooVercel =
       origin.endsWith(".vercel.app") &&
-      (origin.includes("nazar") || origin.includes("nasha"));
+      (origin.includes("bichoo") || origin.includes("nazar") || origin.includes("nasha"));
 
-    if (isLocalhost || isNazarDomain || isNazarVercel) {
+    if (isLocalhost || isBichooDomain || isBichooVercel) {
       return callback(null, true);
     }
 
@@ -104,7 +107,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // HEALTH CHECK
 // ========================================
 app.get("/", (req, res) => {
-  res.send("Nazar OTT Backend Running 🚀");
+  res.send("Bichoo Backend Running 🚀");
 });
 
 // ========================================
