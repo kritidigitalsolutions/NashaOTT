@@ -154,6 +154,21 @@ export default function SubscriptionPage() {
     setPage(1);
   };
 
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncPayments = async () => {
+    setSyncing(true);
+    try {
+      const res = await API.post("/admin/subscription/sync-pending");
+      alert(res.data.message || "Payment sync completed");
+      fetchSubs();
+    } catch (error) {
+      alert(error.response?.data?.message || "Failed to sync pending payments");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <div className="subscription-page">
       <div className="subscription-header">
@@ -161,9 +176,14 @@ export default function SubscriptionPage() {
           <h2><CreditCard size={30} /> Subscriptions</h2>
           <p>Search, manage, and review subscriber access.</p>
         </div>
-        <button className="subscription-refresh" onClick={fetchSubs} disabled={loading}>
-          <RefreshCw size={16} className={loading ? "spin" : ""} /> Refresh
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button className="subscription-refresh" onClick={handleSyncPayments} disabled={syncing || loading} title="Sync pending payments directly from SabPaisa gateway">
+            <RefreshCw size={16} className={syncing ? "spin" : ""} /> {syncing ? "Syncing..." : "Sync Payments"}
+          </button>
+          <button className="subscription-refresh" onClick={fetchSubs} disabled={loading}>
+            <RefreshCw size={16} className={loading ? "spin" : ""} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary Stats Cards (Today / Yesterday / Total) */}

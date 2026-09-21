@@ -290,6 +290,30 @@ exports.checkSubscription = async (
         subscription
       );
 
+    // If no active subscription, check if user has a recent pending transaction (last 48 hours)
+    // and sync with SabPaisa in case payment was completed on gateway but webhook was delayed/missed
+    if (!subscription || subscription.status !== "active") {
+      try {
+        const PaymentTransaction = require("../models/paymentTransaction.model");
+        const { syncTransactionWithSabPaisa } = require("./payment.controller");
+        const recentPending = await PaymentTransaction.findOne({
+          user: userId,
+          status: "pending",
+          createdAt: { $gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+        }).sort({ createdAt: -1 });
+
+        if (recentPending && syncTransactionWithSabPaisa) {
+          console.log("[SUBSCRIPTION] Auto-reconciling pending transaction with SabPaisa for user:", userId);
+          const syncResult = await syncTransactionWithSabPaisa(recentPending);
+          if (syncResult?.success && syncResult?.subscription) {
+            subscription = await Subscription.findById(syncResult.subscription._id || syncResult.subscription).populate("plan");
+          }
+        }
+      } catch (syncErr) {
+        console.error("[SUBSCRIPTION] Auto-reconcile error:", syncErr.message);
+      }
+    }
+
     // invalid subscription
     if (
       !subscription ||

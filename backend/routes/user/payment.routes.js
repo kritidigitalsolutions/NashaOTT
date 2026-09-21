@@ -27,6 +27,6 @@ router.post("/verify", isAuth, verifyPayment);
 
 // These are called by SabPaisa, not by an authenticated app user.
 router.post("/webhook", sabPaisaWebhook);
-router.get("/return", sabPaisaReturn);
+router.all("/return", sabPaisaReturn);
 
 module.exports = router;

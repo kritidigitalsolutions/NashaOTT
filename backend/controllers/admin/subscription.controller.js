@@ -435,3 +435,49 @@ exports.cancelSubscription = async (req, res) => {
 
 // Backward-compatibility alias
 exports.cancelSubscriptionAdmin = exports.cancelSubscription;
+
+// =====================================================
+// SYNC PENDING PAYMENTS (ADMIN)
+// =====================================================
+exports.syncPendingPayments = async (req, res) => {
+  try {
+    const PaymentTransaction = require("../../models/paymentTransaction.model");
+    const { syncTransactionWithSabPaisa } = require("../payment.controller");
+
+    // Look for pending transactions from the last 7 days
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const pendingTransactions = await PaymentTransaction.find({
+      status: "pending",
+      createdAt: { $gte: since },
+    }).sort({ createdAt: -1 });
+
+    let syncedCount = 0;
+    let activatedCount = 0;
+
+    for (const txn of pendingTransactions) {
+      if (!txn.paymentId) continue;
+      syncedCount++;
+      try {
+        const result = await syncTransactionWithSabPaisa(txn);
+        if (result?.success && result?.status === "paid") {
+          activatedCount++;
+        }
+      } catch (err) {
+        console.error(`[SYNC] Error syncing txn ${txn.merchantTxnId}:`, err.message);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Checked ${syncedCount} pending transactions. Activated ${activatedCount} successful subscriptions.`,
+      syncedCount,
+      activatedCount,
+    });
+  } catch (error) {
+    console.error("Admin Sync Pending Payments Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to sync pending payments",
+    });
+  }
+};
