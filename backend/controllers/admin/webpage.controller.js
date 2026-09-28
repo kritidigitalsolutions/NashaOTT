@@ -8,13 +8,15 @@ const Series = require("../../models/series.model");
 const manualPopulate = async (config, select) => {
   const movieIds = [], seriesIds = [];
   for (const b of config.heroBanners) {
-    if (b.contentType === "Movie") movieIds.push(b.contentId.toString());
-    else if (b.contentType === "Series") seriesIds.push(b.contentId.toString());
+    const type = (b.contentType || "").toLowerCase();
+    if (type === "movie") movieIds.push(b.contentId.toString());
+    else if (type === "series") seriesIds.push(b.contentId.toString());
   }
   for (const sec of config.sections) {
     for (const item of sec.items) {
-      if (item.contentType === "Movie") movieIds.push(item.contentId.toString());
-      else if (item.contentType === "Series") seriesIds.push(item.contentId.toString());
+      const type = (item.contentType || "").toLowerCase();
+      if (type === "movie") movieIds.push(item.contentId.toString());
+      else if (type === "series") seriesIds.push(item.contentId.toString());
     }
   }
 
@@ -27,22 +29,24 @@ const manualPopulate = async (config, select) => {
   ]);
 
   const movieMap = {};
-  for (const m of movies) movieMap[m._id.toString()] = m;
+  for (const m of movies) movieMap[m._id.toString()] = { ...m, contentType: "movie" };
   const seriesMap = {};
-  for (const s of seriesList) seriesMap[s._id.toString()] = s;
+  for (const s of seriesList) seriesMap[s._id.toString()] = { ...s, contentType: "series" };
 
   return {
     ...config.toObject(),
     heroBanners: config.heroBanners.map(b => {
       const id = b.contentId.toString();
-      const content = b.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+      const isMovie = (b.contentType || "").toLowerCase() === "movie";
+      const content = isMovie ? movieMap[id] : seriesMap[id];
       return { ...b.toObject(), contentId: content || null };
     }),
     sections: config.sections.map(sec => ({
       ...sec.toObject(),
       items: sec.items.map(item => {
         const id = item.contentId.toString();
-        const content = item.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+        const isMovie = (item.contentType || "").toLowerCase() === "movie";
+        const content = isMovie ? movieMap[id] : seriesMap[id];
         return { ...item.toObject(), contentId: content || null };
       })
     }))
@@ -105,20 +109,6 @@ const updateWebpageConfig = async (req, res) => {
         return { contentType: type, contentId: id };
       })
     }));
-
-    // Check for adult content
-    const [adultMovies, adultSeries] = await Promise.all([
-      movieIds.length ? Movie.find({ _id: { $in: movieIds }, is18Plus: true }).select("title") : [],
-      seriesIds.length ? Series.find({ _id: { $in: seriesIds }, is18Plus: true }).select("title") : []
-    ]);
-
-    if (adultMovies.length > 0 || adultSeries.length > 0) {
-      const titles = [...adultMovies.map(m => m.title), ...adultSeries.map(s => s.title)];
-      return res.status(400).json({
-        success: false,
-        message: `Adult content cannot be added to the webpage layout. Please remove: ${titles.join(", ")}`
-      });
-    }
 
     let config = await WebpageConfig.findOne();
     if (!config) config = new WebpageConfig();

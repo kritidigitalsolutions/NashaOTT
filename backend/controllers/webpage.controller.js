@@ -16,8 +16,9 @@ const populateConfig = async (config) => {
   const bannerMovieIds = [];
   const bannerSeriesIds = [];
   for (const b of config.heroBanners) {
-    if (b.contentType === "Movie") bannerMovieIds.push(b.contentId.toString());
-    else if (b.contentType === "Series") bannerSeriesIds.push(b.contentId.toString());
+    const type = (b.contentType || "").toLowerCase();
+    if (type === "movie") bannerMovieIds.push(b.contentId.toString());
+    else if (type === "series") bannerSeriesIds.push(b.contentId.toString());
   }
 
   // Separate section item IDs by type
@@ -25,8 +26,9 @@ const populateConfig = async (config) => {
   const secSeriesIds = [];
   for (const sec of config.sections) {
     for (const item of sec.items) {
-      if (item.contentType === "Movie") secMovieIds.push(item.contentId.toString());
-      else if (item.contentType === "Series") secSeriesIds.push(item.contentId.toString());
+      const type = (item.contentType || "").toLowerCase();
+      if (type === "movie") secMovieIds.push(item.contentId.toString());
+      else if (type === "series") secSeriesIds.push(item.contentId.toString());
     }
   }
 
@@ -55,16 +57,18 @@ const populateConfigAdmin = async (config) => {
   const bannerMovieIds = [];
   const bannerSeriesIds = [];
   for (const b of config.heroBanners) {
-    if (b.contentType === "Movie") bannerMovieIds.push(b.contentId.toString());
-    else if (b.contentType === "Series") bannerSeriesIds.push(b.contentId.toString());
+    const type = (b.contentType || "").toLowerCase();
+    if (type === "movie") bannerMovieIds.push(b.contentId.toString());
+    else if (type === "series") bannerSeriesIds.push(b.contentId.toString());
   }
 
   const secMovieIds = [];
   const secSeriesIds = [];
   for (const sec of config.sections) {
     for (const item of sec.items) {
-      if (item.contentType === "Movie") secMovieIds.push(item.contentId.toString());
-      else if (item.contentType === "Series") secSeriesIds.push(item.contentId.toString());
+      const type = (item.contentType || "").toLowerCase();
+      if (type === "movie") secMovieIds.push(item.contentId.toString());
+      else if (type === "series") secSeriesIds.push(item.contentId.toString());
     }
   }
 
@@ -88,14 +92,16 @@ const populateConfigAdmin = async (config) => {
     ...config.toObject(),
     heroBanners: config.heroBanners.map(b => {
       const id = b.contentId.toString();
-      const content = b.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+      const isMovie = (b.contentType || "").toLowerCase() === "movie";
+      const content = isMovie ? movieMap[id] : seriesMap[id];
       return { ...b.toObject(), contentId: content || b.contentId };
     }),
     sections: config.sections.map(sec => ({
       ...sec.toObject(),
       items: sec.items.map(item => {
         const id = item.contentId.toString();
-        const content = item.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+        const isMovie = (item.contentType || "").toLowerCase() === "movie";
+        const content = isMovie ? movieMap[id] : seriesMap[id];
         return { ...item.toObject(), contentId: content || item.contentId };
       })
     }))
@@ -103,11 +109,8 @@ const populateConfigAdmin = async (config) => {
   return populated;
 };
 
-// ============================================================
-// Helpers
-// ============================================================
 const isVisible = item =>
-  item && item.title && item.isPublished !== false && item.isHide !== true && item.is18Plus !== true;
+  item && item.title && item.isPublished !== false && item.isHide !== true;
 
 const attachEpisodesToSeries = async (heroBanners, sections) => {
   const seriesIds = [];
@@ -189,13 +192,15 @@ const getWebpageLayout = async (req, res) => {
     // Gather all IDs
     const bannerMovieIds = [], bannerSeriesIds = [], secMovieIds = [], secSeriesIds = [];
     for (const b of config.heroBanners) {
-      if (b.contentType === "Movie") bannerMovieIds.push(b.contentId.toString());
-      else if (b.contentType === "Series") bannerSeriesIds.push(b.contentId.toString());
+      const type = (b.contentType || "").toLowerCase();
+      if (type === "movie") bannerMovieIds.push(b.contentId.toString());
+      else if (type === "series") bannerSeriesIds.push(b.contentId.toString());
     }
     for (const sec of config.sections) {
       for (const item of sec.items) {
-        if (item.contentType === "Movie") secMovieIds.push(item.contentId.toString());
-        else if (item.contentType === "Series") secSeriesIds.push(item.contentId.toString());
+        const type = (item.contentType || "").toLowerCase();
+        if (type === "movie") secMovieIds.push(item.contentId.toString());
+        else if (type === "series") secSeriesIds.push(item.contentId.toString());
       }
     }
 
@@ -217,9 +222,10 @@ const getWebpageLayout = async (req, res) => {
     const heroBanners = config.heroBanners
       .map(b => {
         const id = b.contentId.toString();
-        const content = b.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+        const isMovie = (b.contentType || "").toLowerCase() === "movie";
+        const content = isMovie ? movieMap[id] : seriesMap[id];
         if (!isVisible(content)) return null;
-        return { ...content, type: b.contentType.toLowerCase() };
+        return { ...content, type: isMovie ? "movie" : "series" };
       })
       .filter(Boolean);
 
@@ -230,9 +236,10 @@ const getWebpageLayout = async (req, res) => {
         items: sec.items
           .map(i => {
             const id = i.contentId.toString();
-            const content = i.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+            const isMovie = (i.contentType || "").toLowerCase() === "movie";
+            const content = isMovie ? movieMap[id] : seriesMap[id];
             if (!isVisible(content)) return null;
-            return { ...content, type: i.contentType.toLowerCase() };
+            return { ...content, type: isMovie ? "movie" : "series" };
           })
           .filter(Boolean)
       }))
@@ -273,8 +280,9 @@ const getHeroBanners = async (req, res) => {
 
     const movieIds = [], seriesIds = [];
     for (const b of config.heroBanners) {
-      if (b.contentType === "Movie") movieIds.push(b.contentId.toString());
-      else if (b.contentType === "Series") seriesIds.push(b.contentId.toString());
+      const type = (b.contentType || "").toLowerCase();
+      if (type === "movie") movieIds.push(b.contentId.toString());
+      else if (type === "series") seriesIds.push(b.contentId.toString());
     }
 
     const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate rating videoUrl trailerUrl isPremium";
@@ -292,9 +300,10 @@ const getHeroBanners = async (req, res) => {
     const heroBanners = config.heroBanners
       .map(b => {
         const id = b.contentId.toString();
-        const content = b.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+        const isMovie = (b.contentType || "").toLowerCase() === "movie";
+        const content = isMovie ? movieMap[id] : seriesMap[id];
         if (!isVisible(content)) return null;
-        return { ...content, type: b.contentType.toLowerCase() };
+        return { ...content, type: isMovie ? "movie" : "series" };
       })
       .filter(Boolean);
 
@@ -324,8 +333,9 @@ const getSections = async (req, res) => {
     const movieIds = [], seriesIds = [];
     for (const sec of config.sections) {
       for (const item of sec.items) {
-        if (item.contentType === "Movie") movieIds.push(item.contentId.toString());
-        else if (item.contentType === "Series") seriesIds.push(item.contentId.toString());
+        const type = (item.contentType || "").toLowerCase();
+        if (type === "movie") movieIds.push(item.contentId.toString());
+        else if (type === "series") seriesIds.push(item.contentId.toString());
       }
     }
 
@@ -348,9 +358,10 @@ const getSections = async (req, res) => {
         items: sec.items
           .map(i => {
             const id = i.contentId.toString();
-            const content = i.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+            const isMovie = (i.contentType || "").toLowerCase() === "movie";
+            const content = isMovie ? movieMap[id] : seriesMap[id];
             if (!isVisible(content)) return null;
-            return { ...content, type: i.contentType.toLowerCase() };
+            return { ...content, type: isMovie ? "movie" : "series" };
           })
           .filter(Boolean)
       }))
@@ -383,8 +394,9 @@ const getSectionBySlug = async (req, res) => {
 
     const movieIds = [], seriesIds = [];
     for (const item of sec.items) {
-      if (item.contentType === "Movie") movieIds.push(item.contentId.toString());
-      else if (item.contentType === "Series") seriesIds.push(item.contentId.toString());
+      const type = (item.contentType || "").toLowerCase();
+      if (type === "movie") movieIds.push(item.contentId.toString());
+      else if (type === "series") seriesIds.push(item.contentId.toString());
     }
 
     const SELECT = "title description releaseYear duration language poster banner isComingSoon isPublished isHide is18Plus releaseDate rating videoUrl trailerUrl isPremium";
@@ -402,9 +414,10 @@ const getSectionBySlug = async (req, res) => {
     const items = sec.items
       .map(i => {
         const id = i.contentId.toString();
-        const content = i.contentType === "Movie" ? movieMap[id] : seriesMap[id];
+        const isMovie = (i.contentType || "").toLowerCase() === "movie";
+        const content = isMovie ? movieMap[id] : seriesMap[id];
         if (!isVisible(content)) return null;
-        return { ...content, type: i.contentType.toLowerCase() };
+        return { ...content, type: isMovie ? "movie" : "series" };
       })
       .filter(Boolean);
 
@@ -436,7 +449,7 @@ const getWebpageContentById = async (req, res) => {
     }
 
     if (!item) return res.status(404).json({ success: false, message: "Content not found." });
-    if (item.isPublished === false || item.isHide === true || item.is18Plus === true) {
+    if (item.isPublished === false || item.isHide === true) {
       return res.status(403).json({ success: false, message: "Content is not available." });
     }
 

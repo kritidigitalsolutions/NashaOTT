@@ -6,7 +6,7 @@ const webpageConfigSchema = new mongoose.Schema(
       {
         contentType: {
           type: String,
-          enum: ["Movie", "Series"],
+          enum: ["Movie", "Series", "movie", "series"],
           required: true
         },
         // NOTE: No refPath here — population is done manually in the controller
@@ -31,7 +31,7 @@ const webpageConfigSchema = new mongoose.Schema(
           {
             contentType: {
               type: String,
-              enum: ["Movie", "Series"],
+              enum: ["Movie", "Series", "movie", "series"],
               required: true
             },
             // NOTE: No refPath here — population is done manually in the controller.

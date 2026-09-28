@@ -57,12 +57,12 @@ export default function WebpageLayout() {
           // Only keep banners/items where contentId was actually populated (has a title)
           const isPopulated = (c) => c && typeof c === "object" && c.title;
           const cleanBanners = (cfg.heroBanners || []).filter(
-            b => isPopulated(b.contentId) && b.contentId.is18Plus !== true
+            b => isPopulated(b.contentId)
           );
           const cleanSections = (cfg.sections || []).map(s => ({
             ...s,
             items: (s.items || []).filter(
-              item => isPopulated(item.contentId) && item.contentId.is18Plus !== true
+              item => isPopulated(item.contentId)
             )
           }));
           setHeroBanners(cleanBanners);
@@ -75,7 +75,7 @@ export default function WebpageLayout() {
         if (contentRes.data?.success)
           setContentList(
             (contentRes.data.content || []).filter(
-              i => i.isPublished !== false && i.isHide !== true && i.is18Plus !== true
+              i => i.isPublished !== false && i.isHide !== true
             )
           );
       } catch (err) {
@@ -99,6 +99,26 @@ export default function WebpageLayout() {
 
   const imgUrl = url => (!url ? "" : url);
 
+  const isItemConnectedToCategory = (item, slug) => {
+    if (!item || !item.category) return false;
+    const catList = Array.isArray(item.category) ? item.category : [item.category];
+    const catObj = categories.find(c => c.slug === slug || c.name?.toLowerCase() === slug.toLowerCase() || String(c._id) === slug);
+
+    return catList.some(c => {
+      if (!c) return false;
+      const str = String(c).trim().toLowerCase();
+      if (str === slug.toLowerCase()) return true;
+      if (catObj) {
+        if (str === catObj.slug?.toLowerCase()) return true;
+        if (str === catObj.name?.toLowerCase()) return true;
+        if (String(c) === String(catObj._id)) return true;
+      }
+      const slugified = str.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      if (slugified === slug.toLowerCase()) return true;
+      return false;
+    });
+  };
+
   /* ── Banner helpers ── */
   const onBannerSearch = e => {
     const q = e.target.value;
@@ -113,7 +133,8 @@ export default function WebpageLayout() {
   };
 
   const addBanner = item => {
-    setHeroBanners(prev => [...prev, { contentType: item.contentType === "movie" ? "Movie" : "Series", contentId: item }]);
+    const type = (item.contentType || "").toLowerCase() === "series" ? "Series" : "Movie";
+    setHeroBanners(prev => [...prev, { contentType: type, contentId: item }]);
     setBannerSearch(""); setBannerSearchResults([]); setShowBannerDropdown(false);
     showToast(`Added "${item.title}" to banners`, "success");
   };
@@ -155,8 +176,9 @@ export default function WebpageLayout() {
           x => String(x.contentId?._id || x.contentId) !== String(item._id)
         );
       } else {
+        const type = (item.contentType || "").toLowerCase() === "series" ? "Series" : "Movie";
         sec.items = [...sec.items, {
-          contentType: item.contentType === "movie" ? "Movie" : "Series",
+          contentType: type,
           contentId: item,
         }];
       }
@@ -211,14 +233,14 @@ export default function WebpageLayout() {
     try {
       const payload = {
         heroBanners: heroBanners.map(b => ({
-          contentType: b.contentType,
+          contentType: (b.contentType || "").toLowerCase() === "series" ? "Series" : "Movie",
           contentId: b.contentId?._id || b.contentId,
         })),
         sections: sections.map(s => ({
           categorySlug: s.categorySlug,
           title: s.title,
           items: s.items.map(i => ({
-            contentType: i.contentType,
+            contentType: (i.contentType || "").toLowerCase() === "series" ? "Series" : "Movie",
             contentId: i.contentId?._id || i.contentId,
           })),
         })),
@@ -230,12 +252,12 @@ export default function WebpageLayout() {
           const cfg = res.data.config;
           const isPopulated = (c) => c && typeof c === "object" && c.title;
           setHeroBanners(
-            (cfg.heroBanners || []).filter(b => isPopulated(b.contentId) && b.contentId.is18Plus !== true)
+            (cfg.heroBanners || []).filter(b => isPopulated(b.contentId))
           );
           setSections(
             (cfg.sections || []).map(s => ({
               ...s,
-              items: (s.items || []).filter(item => isPopulated(item.contentId) && item.contentId.is18Plus !== true)
+              items: (s.items || []).filter(item => isPopulated(item.contentId))
             }))
           );
         }
@@ -251,9 +273,25 @@ export default function WebpageLayout() {
   const renderCurator = (sec, secIdx) => {
     const slug = sec.categorySlug;
     const searchQ = sectionSearches[slug] || "";
-    let connected = contentList.filter(i => Array.isArray(i.category) && i.category.includes(slug));
+    let connected = contentList.filter(i => isItemConnectedToCategory(i, slug));
 
-    if (connected.length === 0)
+    const selectedIds = new Set(sec.items.map(x => String(x.contentId?._id || x.contentId)));
+    const selectedList = sec.items
+      .map(x => {
+        const id = String(x.contentId?._id || x.contentId);
+        const fromList = contentList.find(c => String(c._id) === id);
+        if (fromList) return fromList;
+        if (x.contentId && typeof x.contentId === "object" && x.contentId.title) {
+          return {
+            ...x.contentId,
+            contentType: (x.contentType || x.contentId.contentType || "series").toLowerCase()
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
+    if (connected.length === 0 && selectedList.length === 0)
       return (
         <div className="wl-empty-connected">
           <AlertCircle size={18} />
@@ -261,10 +299,6 @@ export default function WebpageLayout() {
         </div>
       );
 
-    const selectedIds = new Set(sec.items.map(x => String(x.contentId?._id || x.contentId)));
-    const selectedList = sec.items
-      .map(x => connected.find(c => String(c._id) === String(x.contentId?._id || x.contentId)))
-      .filter(Boolean);
     let unselected = connected.filter(c => !selectedIds.has(String(c._id)));
     if (searchQ.trim())
       unselected = unselected.filter(c => c.title.toLowerCase().includes(searchQ.toLowerCase()));
@@ -322,7 +356,10 @@ export default function WebpageLayout() {
               <div className="wl-card-body">
                 <p className="wl-card-title">{item.title}</p>
                 <div className="wl-card-foot">
-                  <span className={`wl-type ${item.contentType}`}>{item.contentType}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className={`wl-type ${item.contentType}`}>{item.contentType}</span>
+                    {item.is18Plus && <span className="wl-type" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.4)' }}>18+</span>}
+                  </div>
                   <div className="wl-reorder">
                     <button className="wl-arrow" disabled={idx === 0}
                       onClick={e => moveSectionItem(secIdx, idx, -1, e)}><ChevronLeft size={13} /></button>
@@ -344,7 +381,10 @@ export default function WebpageLayout() {
               <div className="wl-card-body">
                 <p className="wl-card-title">{item.title}</p>
                 <div className="wl-card-foot">
-                  <span className={`wl-type ${item.contentType}`}>{item.contentType}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span className={`wl-type ${item.contentType}`}>{item.contentType}</span>
+                    {item.is18Plus && <span className="wl-type" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.4)' }}>18+</span>}
+                  </div>
                 </div>
               </div>
             </div>

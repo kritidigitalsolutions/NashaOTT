@@ -15,14 +15,25 @@ const parseJSON = (value, defaultValue = []) => {
   }
 };
 
-const parseStringArray = (value) => {
-  const parsed = parseJSON(value);
-  const values = Array.isArray(parsed) ? parsed.flat() : [parsed];
-
-  return values
-    .filter((item) => typeof item === "string")
-    .map((item) => item.trim())
-    .filter(Boolean);
+const parseStringArray = (value, defaultValue = []) => {
+  if (value === undefined || value === null) return defaultValue;
+  if (Array.isArray(value)) {
+    return value.flat().filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.flat().filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean);
+      }
+      if (typeof parsed === "string") {
+        return [parsed.trim()].filter(Boolean);
+      }
+    } catch {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return defaultValue;
 };
 
 const sanitizeCast = (cast = []) => {
@@ -367,12 +378,12 @@ const updateMovie = async (req, res) => {
       });
     }
 
-    const genre = parseJSON(
+    const genre = parseStringArray(
       req.body.genre,
       movie.genre
     );
 
-    const category = parseJSON(
+    const category = parseStringArray(
       req.body.category,
       movie.category
     );

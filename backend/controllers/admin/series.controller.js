@@ -16,14 +16,25 @@ const parseJSON = (value, defaultValue = []) => {
   }
 };
 
-const parseStringArray = (value) => {
-  const parsed = parseJSON(value);
-  const values = Array.isArray(parsed) ? parsed.flat() : [parsed];
-
-  return values
-    .filter((item) => typeof item === "string")
-    .map((item) => item.trim())
-    .filter(Boolean);
+const parseStringArray = (value, defaultValue = []) => {
+  if (value === undefined || value === null) return defaultValue;
+  if (Array.isArray(value)) {
+    return value.flat().filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.flat().filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean);
+      }
+      if (typeof parsed === "string") {
+        return [parsed.trim()].filter(Boolean);
+      }
+    } catch {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return defaultValue;
 };
 
 const sanitizeCast = (cast = []) => {
@@ -236,8 +247,8 @@ const updateSeries = async (req, res) => {
       return res.status(404).json({ success: false, message: "Series not found" });
     }
 
-    const genre = parseJSON(req.body.genre, series.genre);
-    const category = parseJSON(req.body.category, series.category);
+    const genre = parseStringArray(req.body.genre, series.genre);
+    const category = parseStringArray(req.body.category, series.category);
     const cast = parseJSON(req.body.cast, series.cast);
 
     if (req.body.title) series.title = req.body.title;
