@@ -209,13 +209,16 @@ export default function Category() {
   const saveCuratedContent = async (catId, items) => {
     setSavingLayout(true);
     try {
+      const payloadItems = items.map((i, index) => ({
+        contentType: (i.contentType || "").toLowerCase() === "movie" ? "Movie" : "Series",
+        contentId: i.contentId?._id || i.contentId,
+        position: index + 1,
+      }));
       await API.put(`/admin/categories/${catId}/content`, {
-        items: items.map(i => ({
-          contentType: i.contentType,
-          contentId: i.contentId?._id || i.contentId,
-        }))
+        items: payloadItems
       });
       setCuratedMap(prev => ({ ...prev, [catId]: items }));
+      setCategories(prev => prev.map(c => c._id === catId ? { ...c, curatedContent: payloadItems } : c));
     } catch (err) {
       const msg = err?.response?.data?.message || "Failed to save content";
       alert(msg);
@@ -224,37 +227,42 @@ export default function Category() {
     }
   };
 
-  const toggleCarouselItem = (catId, slug, item, removing) => {
-    const currentItems = [...(curatedMap[catId] || [])];
-    let nextItems;
+  const toggleCarouselItem = (catId, slug, item, removing, currentSelected) => {
+    let nextList;
     if (removing) {
-      nextItems = currentItems.filter(
-        x => String(x.contentId?._id || x.contentId) !== String(item._id)
+      nextList = (currentSelected || []).filter(
+        x => String(x._id) !== String(item._id)
       );
     } else {
-      nextItems = [...currentItems, {
-        contentType: item.contentType === "movie" ? "Movie" : "Series",
-        contentId: item,
-      }];
+      nextList = [...(currentSelected || []), item];
     }
-    setCuratedMap(prev => ({ ...prev, [catId]: nextItems }));
-    saveCuratedContent(catId, nextItems);
+    const nextCurated = nextList.map(i => ({
+      contentType: (i.contentType || "").toLowerCase() === "movie" ? "Movie" : "Series",
+      contentId: i,
+    }));
+    setCuratedMap(prev => ({ ...prev, [catId]: nextCurated }));
+    saveCuratedContent(catId, nextCurated);
   };
 
-  const moveToPos = (catId, currentIdx, newPosVal) => {
+  const moveToPos = (catId, currentIdx, newPosVal, currentSelected) => {
     let newPos = parseInt(newPosVal, 10) - 1;
-    if (isNaN(newPos)) return;
+    if (isNaN(newPos) || !currentSelected || currentSelected.length === 0) return;
 
-    const currentItems = [...(curatedMap[catId] || [])];
     if (newPos < 0) newPos = 0;
-    if (newPos >= currentItems.length) newPos = currentItems.length - 1;
+    if (newPos >= currentSelected.length) newPos = currentSelected.length - 1;
     if (currentIdx === newPos) return;
 
-    const [movedItem] = currentItems.splice(currentIdx, 1);
-    currentItems.splice(newPos, 0, movedItem);
+    const list = [...currentSelected];
+    const [moved] = list.splice(currentIdx, 1);
+    list.splice(newPos, 0, moved);
 
-    setCuratedMap(prev => ({ ...prev, [catId]: currentItems }));
-    saveCuratedContent(catId, currentItems);
+    const nextCurated = list.map(item => ({
+      contentType: (item.contentType || "").toLowerCase() === "movie" ? "Movie" : "Series",
+      contentId: item,
+    }));
+
+    setCuratedMap(prev => ({ ...prev, [catId]: nextCurated }));
+    saveCuratedContent(catId, nextCurated);
   };
 
   const toggleExpand = (slug) => {
@@ -314,22 +322,26 @@ export default function Category() {
           {/* Selected Items */}
           {selectedList.map((item, idx) => (
             <div key={item._id} className="wl-card wl-card--selected">
-              <div className="wl-card-media" onClick={() => toggleCarouselItem(catId, slug, item, true)} title="Click to remove from row">
+              <div className="wl-card-media" onClick={() => toggleCarouselItem(catId, slug, item, true, selectedList)} title="Click to remove from row">
                 <img src={imgUrl(item.poster)} alt="" className="wl-poster" />
                 <div className="wl-card-badge wl-card-badge--check"><Check size={10} /></div>
                 <label className="wl-card-pos" onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', background: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', cursor: 'text', boxShadow: '0 2px 4px rgba(0,0,0,0.3)' }} title="Type to change order">
                   <span style={{ marginRight: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Pos</span>
                   <input 
                     className="pos-input-no-arrows"
-                    key={`pos-${catId}-${item._id}-${idx}`}
+                    key={`pos-${catId}-${item._id}-${idx}-${selectedList.length}`}
                     type="number" 
                     defaultValue={idx + 1}
                     onBlur={e => {
-                      moveToPos(catId, idx, e.target.value);
-                      e.target.value = idx + 1; // Force visual reset to bounded value
+                      const val = e.target.value;
+                      if (val && parseInt(val, 10) !== idx + 1) {
+                        moveToPos(catId, idx, val, selectedList);
+                      }
                     }}
                     onKeyDown={e => {
-                      if(e.key === 'Enter') e.target.blur();
+                      if (e.key === 'Enter') {
+                        e.target.blur();
+                      }
                     }}
                     style={{
                       width: "36px",
@@ -351,8 +363,34 @@ export default function Category() {
               </div>
               <div className="wl-card-body">
                 <p className="wl-card-title">{item.title}</p>
-                <div className="wl-card-foot">
+                <div className="wl-card-foot" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span className={`wl-type ${item.contentType}`}>{item.contentType}</span>
+                  <div style={{ display: "flex", gap: "4px" }} onClick={e => e.stopPropagation()}>
+                    <button
+                      className="wl-arrow"
+                      disabled={idx === 0}
+                      title="Move Left"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveToPos(catId, idx, idx, selectedList);
+                      }}
+                      style={{ width: "24px", height: "24px", borderRadius: "4px" }}
+                    >
+                      <ChevronLeft size={13} />
+                    </button>
+                    <button
+                      className="wl-arrow"
+                      disabled={idx === selectedList.length - 1}
+                      title="Move Right"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        moveToPos(catId, idx, idx + 2, selectedList);
+                      }}
+                      style={{ width: "24px", height: "24px", borderRadius: "4px" }}
+                    >
+                      <ChevronRight size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -361,7 +399,7 @@ export default function Category() {
           {/* Unselected Items */}
           {unselected.map(item => (
             <div key={item._id} className="wl-card wl-card--dim">
-              <div className="wl-card-media" onClick={() => toggleCarouselItem(catId, slug, item, false)} title="Click to add to row">
+              <div className="wl-card-media" onClick={() => toggleCarouselItem(catId, slug, item, false, selectedList)} title="Click to add to row">
                 <img src={imgUrl(item.poster)} alt="" className="wl-poster" />
                 <div className="wl-card-badge wl-card-badge--add"><Plus size={10} /></div>
               </div>

@@ -327,12 +327,14 @@ export default function WebpageLayout() {
                   <span style={{ marginRight: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#000' }}>Pos</span>
                   <input 
                     className="pos-input-no-arrows"
-                    key={`pos-sec-${secIdx}-${item._id}-${idx}`}
+                    key={`pos-sec-${secIdx}-${item._id}-${idx}-${selectedList.length}`}
                     type="number" 
                     defaultValue={idx + 1}
                     onBlur={e => {
-                      moveSectionItemToPos(secIdx, idx, e.target.value);
-                      e.target.value = idx + 1; 
+                      const val = e.target.value;
+                      if (val && parseInt(val, 10) !== idx + 1) {
+                        moveSectionItemToPos(secIdx, idx, val);
+                      }
                     }}
                     onKeyDown={e => {
                       if(e.key === 'Enter') e.target.blur();
@@ -486,12 +488,14 @@ export default function WebpageLayout() {
                           <span style={{ marginRight: '4px', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#000' }}>Pos</span>
                           <input 
                             className="pos-input-no-arrows"
-                            key={`pos-banner-${item._id}-${idx}`}
+                            key={`pos-banner-${item._id}-${idx}-${heroBanners.length}`}
                             type="number" 
                             defaultValue={idx + 1}
                             onBlur={e => {
-                              moveBannerToPos(idx, e.target.value);
-                              e.target.value = idx + 1; 
+                              const val = e.target.value;
+                              if (val && parseInt(val, 10) !== idx + 1) {
+                                moveBannerToPos(idx, val);
+                              }
                             }}
                             onKeyDown={e => {
                               if(e.key === 'Enter') e.target.blur();

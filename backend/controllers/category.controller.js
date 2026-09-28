@@ -56,19 +56,27 @@ exports.getCategoryContent = async (req, res) => {
       // Return curated (admin-selected) content in the saved order
       const movieIds = category.curatedContent.filter(i => i.contentType === "Movie").map(i => i.contentId);
       const seriesIds = category.curatedContent.filter(i => i.contentType === "Series").map(i => i.contentId);
+      const dramaIds = category.curatedContent.filter(i => i.contentType === "ShortDrama" || i.contentType === "drama" || i.contentType === "Drama").map(i => i.contentId);
 
-      const [movies, series] = await Promise.all([
+      const ShortDrama = require("../models/shortdrama.model");
+
+      const [movies, series, dramas] = await Promise.all([
         movieIds.length > 0 ? Movie.find({ _id: { $in: movieIds } }).lean() : [],
-        seriesIds.length > 0 ? Series.find({ _id: { $in: seriesIds } }).lean() : []
+        seriesIds.length > 0 ? Series.find({ _id: { $in: seriesIds } }).lean() : [],
+        dramaIds.length > 0 ? ShortDrama.find({ _id: { $in: dramaIds } }).lean() : []
       ]);
 
       const movieMap = new Map(movies.map(m => [m._id.toString(), { ...m, contentType: "Movie" }]));
       const seriesMap = new Map(series.map(s => [s._id.toString(), { ...s, contentType: "Series" }]));
+      const dramaMap = new Map(dramas.map(d => [d._id.toString(), { ...d, contentType: "ShortDrama" }]));
 
       contents = category.curatedContent
         .map((item, index) => {
           const idStr = item.contentId.toString();
-          const contentData = item.contentType === "Movie" ? movieMap.get(idStr) : seriesMap.get(idStr);
+          let contentData = null;
+          if (item.contentType === "Movie") contentData = movieMap.get(idStr);
+          else if (item.contentType === "Series") contentData = seriesMap.get(idStr);
+          else contentData = dramaMap.get(idStr);
           return contentData ? { ...contentData, position: item.position || index + 1 } : null;
         })
         .filter(Boolean);

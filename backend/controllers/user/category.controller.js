@@ -107,25 +107,54 @@ const getContentByCategory = async (req, res) => {
     // Search query for matching category name or slug in category array
     const categoryRegex = new RegExp(`^${categoryName}$|^${categorySlug}$`, "i");
 
-    const [movies, series, shortDramas] = await Promise.all([
-      Movie.find({ category: { $elemMatch: { $regex: categoryRegex } } })
-        .sort({ priority: -1, createdAt: -1 })
-        .lean(),
-      Series.find({ category: { $elemMatch: { $regex: categoryRegex } } })
-        .sort({ priority: -1, createdAt: -1 })
-        .lean(),
-      ShortDrama.find({ category: { $elemMatch: { $regex: categoryRegex } } })
-        .sort({ priority: -1, createdAt: -1 })
-        .lean(),
-    ]);
+    let allContent = [];
 
-    const formattedMovies = movies.map((m) => ({ ...m, type: "movie" }));
-    const formattedSeries = series.map((s) => ({ ...s, type: "series" }));
-    const formattedShortDramas = shortDramas.map((d) => ({ ...d, type: "shortdrama" }));
+    if (category && category.curatedContent && category.curatedContent.length > 0) {
+      const movieIds = category.curatedContent.filter(i => i.contentType === "Movie").map(i => i.contentId);
+      const seriesIds = category.curatedContent.filter(i => i.contentType === "Series").map(i => i.contentId);
+      const dramaIds = category.curatedContent.filter(i => i.contentType === "ShortDrama" || i.contentType === "drama" || i.contentType === "Drama").map(i => i.contentId);
 
-    const allContent = [...formattedMovies, ...formattedSeries, ...formattedShortDramas].sort(
-      (a, b) => (b.priority || 0) - (a.priority || 0) || new Date(b.createdAt) - new Date(a.createdAt)
-    );
+      const [movies, series, dramas] = await Promise.all([
+        movieIds.length > 0 ? Movie.find({ _id: { $in: movieIds } }).lean() : [],
+        seriesIds.length > 0 ? Series.find({ _id: { $in: seriesIds } }).lean() : [],
+        dramaIds.length > 0 ? ShortDrama.find({ _id: { $in: dramaIds } }).lean() : []
+      ]);
+
+      const movieMap = new Map(movies.map(m => [m._id.toString(), { ...m, type: "movie", contentType: "Movie" }]));
+      const seriesMap = new Map(series.map(s => [s._id.toString(), { ...s, type: "series", contentType: "Series" }]));
+      const dramaMap = new Map(dramas.map(d => [d._id.toString(), { ...d, type: "shortdrama", contentType: "ShortDrama" }]));
+
+      allContent = category.curatedContent
+        .map((item, index) => {
+          const idStr = item.contentId.toString();
+          let contentData = null;
+          if (item.contentType === "Movie") contentData = movieMap.get(idStr);
+          else if (item.contentType === "Series") contentData = seriesMap.get(idStr);
+          else contentData = dramaMap.get(idStr);
+          return contentData ? { ...contentData, position: item.position || index + 1 } : null;
+        })
+        .filter(Boolean);
+    } else {
+      const [movies, series, shortDramas] = await Promise.all([
+        Movie.find({ category: { $elemMatch: { $regex: categoryRegex } } })
+          .sort({ priority: 1, createdAt: -1 })
+          .lean(),
+        Series.find({ category: { $elemMatch: { $regex: categoryRegex } } })
+          .sort({ priority: 1, createdAt: -1 })
+          .lean(),
+        ShortDrama.find({ category: { $elemMatch: { $regex: categoryRegex } } })
+          .sort({ priority: 1, createdAt: -1 })
+          .lean(),
+      ]);
+
+      const formattedMovies = movies.map((m) => ({ ...m, type: "movie" }));
+      const formattedSeries = series.map((s) => ({ ...s, type: "series" }));
+      const formattedShortDramas = shortDramas.map((d) => ({ ...d, type: "shortdrama" }));
+
+      allContent = [...formattedMovies, ...formattedSeries, ...formattedShortDramas].sort(
+        (a, b) => (a.priority || 0) - (b.priority || 0) || new Date(b.createdAt) - new Date(a.createdAt)
+      );
+    }
 
     const total = allContent.length;
     const totalPages = Math.ceil(total / limit);

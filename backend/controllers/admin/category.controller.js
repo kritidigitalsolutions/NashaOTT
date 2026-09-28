@@ -199,8 +199,8 @@ exports.saveCuratedContent = async (req, res) => {
     }
 
     category.curatedContent = items.map((i, index) => ({
-      contentType: i.contentType,
-      contentId: i.contentId,
+      contentType: (i.contentType || "").toLowerCase() === "movie" ? "Movie" : "Series",
+      contentId: i.contentId?._id || i.contentId,
       position: index + 1
     }));
 
@@ -209,7 +209,8 @@ exports.saveCuratedContent = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Curated content saved successfully",
-      count: category.curatedContent.length
+      count: category.curatedContent.length,
+      data: category
     });
   } catch (error) {
     console.error("SAVE CURATED CONTENT ERROR:", error);
