@@ -1,6 +1,6 @@
 const Notification = require("../models/notification.model");
 const User = require("../models/user.model");
-const { sendPushNotification } = require("./fcm.service");
+const { sendPushNotification, sendMulticastNotification } = require("./fcm.service");
 
 /**
  * Builds an emoji prefix based on content type.
@@ -138,25 +138,25 @@ const sendContentUploadNotification = async ({ content, contentType, createdBy }
             duration: content.duration || "",
         };
 
-        let sent = 0;
-        let failed = 0;
+        const tokens = [
+            ...new Set(
+                users
+                    .map((u) => u.fcmToken)
+                    .filter((t) => t && typeof t === "string" && t.trim().length > 0)
+            ),
+        ];
 
-        for (const user of users) {
-            const result = await sendPushNotification({
-                token: user.fcmToken,
-                title,
-                body: parts[0] || message, // First line as push body
-                imageUrl: content.poster || null,
-                actionUrl,
-                data: pushData,
-            });
-
-            if (result.success) sent++;
-            else failed++;
-        }
+        const multicastResult = await sendMulticastNotification({
+            tokens,
+            title,
+            body: parts[0] || message,
+            imageUrl: content.poster || null,
+            actionUrl,
+            data: pushData,
+        });
 
         console.log(
-            `[ContentUploadNotification] "${title}" → DB saved | Push: ${sent} sent, ${failed} failed`
+            `[ContentUploadNotification] "${title}" → DB saved | Multicast: ${multicastResult.sent} sent, ${multicastResult.failed} failed`
         );
 
     } catch (error) {
